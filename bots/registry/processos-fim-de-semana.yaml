@@ -1,0 +1,27 @@
+key: processos-fim-de-semana
+name: "Processos de fim de semana do servidor de bots"
+description: >
+  Orquestrador de fim de semana: Saldos (último dia do mês), Análise de
+  desempenho (dia 14) e Análise PEP (dias 1, 8, 15, 22, 29).
+category: Orquestração
+risk_level: medium
+source_file: "OK processos fim de semana do servidor de bots.xml"
+execution:
+  adapter: taskt_cli
+  script: "OK processos fim de semana do servidor de bots.xml"
+  validated: false
+external_effects:
+  - "Os dos bots chamados (relatórios e emails)"
+known_limitations:
+  - "As sub-execuções não são visíveis individualmente"
+concurrency:
+  policy: single
+  exclusive_resources: [taskt-desktop]
+timeout_seconds: 43200
+success_detection:
+  method: taskt_log
+triggers_allowed: [manual, schedule]
+requires_approval: false
+permissions:
+  view: [viewer, operator, approver]
+  execute: [operator]

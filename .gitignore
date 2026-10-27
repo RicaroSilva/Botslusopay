@@ -1,0 +1,33 @@
+# Scripts dos bots (contêm credenciais): ficam no servidor de bots, nunca no Git
+*.xml
+!backend/**/*.xml
+Config.txt
+Ficheiro config robots/
+bots/scripts/
+
+# Segredos
+.env
+*.env
+!config/*.env.example
+*.token
+worker-state.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+*.db
+
+# Node
+node_modules/
+frontend/dist/
+
+# SO / editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+tsconfig.tsbuildinfo

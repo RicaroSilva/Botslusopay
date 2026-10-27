@@ -1,0 +1,35 @@
+key: saldos-clientes-fim-mes
+name: "Saldos de clientes no Cyclos no final do mês"
+description: >
+  Recolhe por API os saldos de todos os clientes, gera um CSV em
+  Listas\Saldo no fim do mês\ e envia-o por email à administração/contabilidade.
+  No orquestrador atual corre no último dia do mês (quando amanhã é dia 01).
+category: Contabilidade
+risk_level: medium
+source_file: "OK Saldos de clientes no Cyclos no final do mês.xml"
+execution:
+  adapter: taskt_cli
+  script: "OK Saldos de clientes no Cyclos no final do mês.xml"
+  validated: false
+prerequisites:
+  - "Config.txt com RPATaskt, Host, smtpUser, smtpPass"
+  - "Pasta Listas\\Saldo no fim do mês\\ existente"
+external_effects:
+  - "GET à API Cyclos (~2 s por cliente; ~3,5 h para 6000 clientes)"
+  - "Envio de email com o CSV de saldos (dados financeiros de clientes)"
+config_files:
+  - "%USERPROFILE%\\Documents\\Ficheiro config robots\\Config.txt"
+concurrency:
+  policy: single
+  exclusive_resources: [taskt-desktop]
+timeout_seconds: 21600
+success_detection:
+  method: taskt_log
+  checks:
+    - type: file_exists
+      path: "Listas/Saldo no fim do mês/Saldos de clientes a {date}.csv"
+triggers_allowed: [manual, schedule]
+requires_approval: false
+permissions:
+  view: [viewer, operator, approver]
+  execute: [operator]

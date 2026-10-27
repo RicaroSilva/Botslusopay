@@ -1,0 +1,25 @@
+key: listas-onu-ue-openbots
+name: "Análise de listas de sanções ONU e UE (OpenBots)"
+description: >
+  Projeto OpenBots Studio "Análise Listas ONU e UE" lançado pelo orquestrador
+  diário (sem esperar pelo fim). O projeto NÃO está no repositório; existem
+  versões taskt antigas no inventário.
+category: Compliance
+risk_level: medium
+source_file: "Análise Listas ONU e UE/project.obconfig"
+execution:
+  adapter: openbots_studio
+  script: "Análise Listas ONU e UE/project.obconfig"
+  validated: false
+known_limitations:
+  - "Mecanismo de execução OpenBots por linha de comandos por confirmar"
+concurrency:
+  policy: single
+  exclusive_resources: [taskt-desktop]
+timeout_seconds: 10800
+success_detection:
+  method: exit_code
+triggers_allowed: [manual]
+permissions:
+  view: [viewer, operator, approver]
+  execute: [operator]

@@ -1,0 +1,37 @@
+key: processos-diarios
+name: "Processos diários do servidor de bots (orquestrador)"
+description: >
+  Orquestrador atual: lê configurações, corre Saldos (último dia do mês),
+  Atribuir Tarifa MB Way (todos os dias), lança os projetos OpenBots de
+  diligência reforçada BdP e listas ONU/UE (exceto sexta/sábado conforme
+  ficheiro sexta-feira.txt), Análise de desempenho (dia 14) e Análise PEP
+  (dias 1, 8, 15, 22, 29).
+category: Orquestração
+risk_level: high
+source_file: "OK processos diarios do servidor de bots.xml"
+execution:
+  adapter: taskt_cli
+  script: "OK processos diarios do servidor de bots.xml"
+  validated: false
+prerequisites:
+  - "Todos os pré-requisitos dos bots que chama"
+  - "Projetos OpenBots em Documents\\OpenBotsStudio\\My Scripts\\ (não incluídos no repositório)"
+  - "Ficheiro Listas\\Processos diarios servidor de bots\\sexta-feira.txt"
+external_effects:
+  - "Os de todos os bots chamados, incluindo alterações no Cyclos (Tarifa MB Way)"
+known_limitations:
+  - "As sub-execuções (Run Task) não são visíveis individualmente no Bot Manager"
+  - "Se também estiver agendado no Agendador de Tarefas do Windows, NÃO criar regra de agendamento aqui (duplicaria execuções)"
+  - "Ver docs/arquitetura.md: recomenda-se substituir este orquestrador por regras explícitas do Bot Manager"
+concurrency:
+  policy: single
+  exclusive_resources: [taskt-desktop, cyclos-rest-console]
+timeout_seconds: 43200
+success_detection:
+  method: taskt_log
+triggers_allowed: [manual, schedule]
+requires_approval: true
+permissions:
+  view: [viewer, operator, approver]
+  execute: [operator]
+  approve: [approver]

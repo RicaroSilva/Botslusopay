@@ -1,0 +1,22 @@
+# APENAS DESENVOLVIMENTO
+key: demo-simulado-aprovacao
+name: "[SIMULADO] Bot de risco elevado (exige aprovação)"
+description: "Simula um bot com efeitos reais que exige aprovação de um segundo utilizador."
+category: Desenvolvimento
+risk_level: high
+execution:
+  adapter: simulated
+  script: "demo-high"
+  validated: true
+concurrency:
+  policy: single
+  exclusive_resources: [sim-desktop]
+timeout_seconds: 60
+success_detection:
+  method: simulated
+triggers_allowed: [manual, after_bot]
+requires_approval: true
+permissions:
+  view: [viewer, operator, approver]
+  execute: [operator]
+  approve: [approver]

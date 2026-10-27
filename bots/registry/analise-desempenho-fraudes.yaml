@@ -1,0 +1,29 @@
+key: analise-desempenho-fraudes
+name: "Análise de desempenho, operações e fraudes"
+description: >
+  Recolhe registos de fraude/eventual fraude e transferências por API, gera o
+  CSV de análise do período e envia-o por email. No orquestrador atual corre
+  no dia 14 de cada mês.
+category: Compliance
+risk_level: medium
+source_file: "OK Análise de desempenho, operações e fraudes nas transações LUSOPAY.xml"
+execution:
+  adapter: taskt_cli
+  script: "OK Análise de desempenho, operações e fraudes nas transações LUSOPAY.xml"
+  validated: false
+prerequisites:
+  - "Config.txt com credenciais API e SMTP"
+external_effects:
+  - "GET à API Cyclos"
+  - "Envio de email com relatório"
+concurrency:
+  policy: single
+  exclusive_resources: [taskt-desktop]
+timeout_seconds: 10800
+success_detection:
+  method: taskt_log
+triggers_allowed: [manual, schedule]
+requires_approval: false
+permissions:
+  view: [viewer, operator, approver]
+  execute: [operator]
