@@ -3,9 +3,10 @@ import { ApiError, api } from "../api";
 import { AvailabilityBadge, Card, Empty, ErrorBox, RiskBadge } from "../components/ui";
 import { TRIGGER_LABEL, fmtDate } from "../format";
 import { useResource } from "../hooks";
+import { Credentials } from "./Credentials";
 import type { Bot, Dependency, Role, Rule, User } from "../types";
 
-const TABS = ["Bots", "Regras de disparo", "Dependências", "Utilizadores", "Permissões", "Workers", "Configurações"] as const;
+const TABS = ["Bots", "Credenciais", "Regras de disparo", "Dependências", "Utilizadores", "Permissões", "Workers", "Configurações"] as const;
 type Tab = (typeof TABS)[number];
 
 function useAction(reload: () => void) {
@@ -354,6 +355,7 @@ export function Admin() {
         ))}
       </div>
       {tab === "Bots" && <BotsAdmin />}
+      {tab === "Credenciais" && <Credentials />}
       {tab === "Regras de disparo" && <RulesAdmin />}
       {tab === "Dependências" && <DependenciesAdmin />}
       {tab === "Utilizadores" && <UsersAdmin />}

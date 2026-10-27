@@ -41,6 +41,16 @@ No total, 49 dos 64 XML têm pelo menos uma credencial literal. Pontos important
 | Ficheiros produzidos com dados pessoais/financeiros | não são copiados para o Bot Manager | continuam no servidor de bots e nos emails |
 | `poll_http` usado para SSRF | só https, hosts na lista autorizada, sem redirects, só administradores configuram | — |
 
+### Riscos específicos dos fluxos nativos
+
+| Risco | Mitigação |
+|---|---|
+| Perda da `BM_VAULT_KEY` | sem ela as credenciais não se decifram: guardar a chave num cofre; suporta rotação (`BM_VAULT_KEY_OLD`) |
+| Fluxo usado para chamar sistemas internos (SSRF) | só https, host fixo no URL, sem redireções, `BM_FLOW_ALLOWED_HOSTS`, só administradores/configure editam |
+| Fluxo com erros a alterar dados reais | risco elevado → aprovação obrigatória; versões fixadas no pedido; testar no ambiente dev; POST nunca repetido automaticamente |
+| Ficheiros com dados pessoais guardados na BD | limite de tamanho, downloads auditados; **falta definir retenção** (ver questões em aberto) |
+| Lógica de negócio reescrita diferente da original | correr o fluxo em paralelo com o bot taskt e comparar resultados antes de desligar o antigo |
+
 ## 3. Limitações conhecidas desta versão
 
 - **O runtime real não foi executado.** Nenhuma integração com bots reais foi validada (ver
@@ -56,7 +66,9 @@ No total, 49 dos 64 XML têm pelo menos uma credencial literal. Pontos important
 - O cancelamento termina o processo à força: um bot a meio de uma operação externa pode deixá-la incompleta (por isso
   a execução fica `CANCELLED` e deve ser verificada).
 - O cron não exprime "último dia do mês".
-- A retenção de logs/auditoria não está automatizada (definir a política e uma tarefa de limpeza/arquivo).
+- A retenção de logs/auditoria e dos ficheiros produzidos não está automatizada (definir a política e uma tarefa de limpeza/arquivo).
+- O passo SQL Server usa `pymssql` e foi testado com uma ligação simulada; ainda não contra o SQL Server real.
+- O editor de fluxos é por formulário; não há execução "a seco" passo a passo (testar contra o ambiente dev).
 
 ## 4. Questões em aberto
 

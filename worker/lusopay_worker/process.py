@@ -10,15 +10,24 @@ from pathlib import Path
 IS_WINDOWS = sys.platform == "win32"
 
 
-def start(argv: list[str], cwd: Path | None) -> subprocess.Popen:
+def start(argv: list[str], cwd: Path | None, stdin_data: bytes | None = None,
+          env: dict[str, str] | None = None) -> subprocess.Popen:
     """Inicia sem shell (argv é uma lista; nada é interpretado por cmd.exe)."""
-    kwargs: dict = {"cwd": str(cwd) if cwd else None, "stdin": subprocess.DEVNULL,
-                    "stdout": subprocess.PIPE, "stderr": subprocess.STDOUT}
+    kwargs: dict = {"cwd": str(cwd) if cwd else None,
+                    "stdin": subprocess.PIPE if stdin_data is not None else subprocess.DEVNULL,
+                    "stdout": subprocess.PIPE, "stderr": subprocess.STDOUT, "env": env}
     if IS_WINDOWS:
         kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP  # type: ignore[attr-defined]
     else:
         kwargs["start_new_session"] = True
-    return subprocess.Popen(argv, shell=False, **kwargs)
+    proc = subprocess.Popen(argv, shell=False, **kwargs)
+    if stdin_data is not None:
+        assert proc.stdin is not None
+        try:
+            proc.stdin.write(stdin_data)
+        finally:
+            proc.stdin.close()
+    return proc
 
 
 def kill_tree(pid: int) -> None:

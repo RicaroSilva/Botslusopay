@@ -179,6 +179,8 @@ def create_run(
         if existing is not None:
             return CreateResult(existing, deduplicated=True)
 
+    if bot.adapter == "flow" and not bot.current_flow_version:
+        raise BotUnavailable("o fluxo ainda não tem nenhuma versão gravada")
     if not bot.in_registry or not bot.enabled or bot.availability != Availability.AVAILABLE:
         raise BotUnavailable(
             "bot indisponível", enabled=bot.enabled, availability=bot.availability.value, in_registry=bot.in_registry
@@ -209,6 +211,8 @@ def create_run(
         exclusive_key=bot.id if defn.concurrency.policy == "single" else None,
         parameters=public_params,
         timeout_seconds=defn.timeout_seconds,
+        # a versão do fluxo fica fixada no pedido: é essa que é aprovada e executada
+        flow_version=bot.current_flow_version if bot.adapter == "flow" else None,
     )
     try:
         with db.begin_nested():

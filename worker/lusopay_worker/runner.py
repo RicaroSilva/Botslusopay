@@ -19,9 +19,15 @@ log = logging.getLogger("lusopay_worker.runner")
 MAX_OUTPUT_CHARS = 200_000
 
 
+def _content_type(path) -> str:
+    return {".csv": "text/csv", ".json": "application/json", ".txt": "text/plain"}.get(
+        path.suffix.lower(), "application/octet-stream")
+
+
 class RunLogger:
     def __init__(self, cfg: WorkerConfig):
         self.cfg = cfg
+        self.extra_secrets: list[str] = []
         self.seq = 0
         self.pending: list[dict[str, Any]] = []
         self.lock = threading.Lock()
@@ -34,7 +40,7 @@ class RunLogger:
                 "ts": datetime.now(timezone.utc).isoformat(),
                 "level": level,
                 "source": source,
-                "message": redact_text(message, self.cfg.extra_redactions)[:8000],
+                "message": redact_text(message, [*self.cfg.extra_redactions, *self.extra_secrets])[:8000],
             })
 
     def drain(self) -> list[dict[str, Any]]:
@@ -99,6 +105,13 @@ class Runner:
             return payload
         adapter = adapter_cls(self.cfg)
         ctx = RunContext(job=job)
+        logger.extra_secrets = adapter.secrets(ctx)
+        try:
+            return self._execute(job, run_id, logger, adapter, ctx)
+        finally:
+            adapter.cleanup(ctx)
+
+    def _execute(self, job, run_id, logger, adapter, ctx) -> dict[str, Any]:
         try:
             spec = adapter.prepare(ctx)
         except AdapterRejected as exc:
@@ -110,7 +123,7 @@ class Runner:
 
         ctx.started_at = datetime.now()
         try:
-            proc = process.start(spec.argv, spec.cwd)
+            proc = process.start(spec.argv, spec.cwd, spec.stdin_data, spec.env)
         except OSError as exc:
             logger.add(f"Erro ao iniciar o processo: {exc}", "ERROR")
             payload = {"status": "FAILED", "failure_reason": "launch_error", "process_started": False}
@@ -127,10 +140,16 @@ class Runner:
             assert proc.stdout is not None
             for raw in iter(proc.stdout.readline, b""):
                 line = raw.decode("utf-8", errors="replace").rstrip()
-                if out_len[0] < MAX_OUTPUT_CHARS:
+                if out_len[0] < MAX_OUTPUT_CHARS or line.startswith("@@RESULT "):
                     output_parts.append(line)
                     out_len[0] += len(line)
-                logger.add(line, source="process")
+                if line.startswith("@@RESULT "):
+                    continue  # linha técnica de resultado, não é mostrada nos logs
+                level = "INFO"
+                for lv in ("ERROR", "WARNING"):
+                    if line.startswith(lv + " "):
+                        level, line = lv, line[len(lv) + 1:]
+                logger.add(line, level=level, source="process")
 
         reader = threading.Thread(target=pump, daemon=True)
         reader.start()
@@ -177,6 +196,12 @@ class Runner:
             outcome = adapter.evaluate(ctx, exit_code, "\n".join(output_parts))
             payload = {"status": outcome.status, "failure_reason": outcome.failure_reason, "exit_code": exit_code,
                        "process_started": True, "result_summary": outcome.result_summary}
+            for path in outcome.artifacts:
+                try:
+                    self.client.upload_artifact(run_id, path.name, path.read_bytes(), _content_type(path))
+                    logger.add(f"Ficheiro guardado: {path.name} ({path.stat().st_size} bytes)")
+                except Exception as exc:  # o resultado do bot não muda por falhar o envio
+                    logger.add(f"Não foi possível guardar o ficheiro {path.name}: {exc}", "WARNING")
         level = "INFO" if payload["status"] == "SUCCEEDED" else "ERROR"
         logger.add(f"Resultado: {payload['status']}" + (f" ({payload['failure_reason']})" if payload.get("failure_reason") else ""), level)
         self._finish(run_id, logger, payload)

@@ -6,6 +6,7 @@ import { Audit } from "./pages/Audit";
 import { BotDetail } from "./pages/BotDetail";
 import { Bots } from "./pages/Bots";
 import { Dashboard } from "./pages/Dashboard";
+import { FlowEditor } from "./pages/FlowEditor";
 import { Login } from "./pages/Login";
 import { RunDetail } from "./pages/RunDetail";
 import { Runs } from "./pages/Runs";
@@ -20,6 +21,8 @@ export function App() {
         <Route index element={<Dashboard />} />
         <Route path="bots" element={<Bots />} />
         <Route path="bots/:key" element={<BotDetail />} />
+        {hasRole(user, "admin") && <Route path="flows/new" element={<FlowEditor />} />}
+        <Route path="flows/:key" element={<FlowEditor />} />
         <Route path="runs" element={<Runs />} />
         <Route path="runs/:id" element={<RunDetail />} />
         <Route path="approvals" element={<Runs fixedStatus="WAITING_APPROVAL" title="Aprovações pendentes" />} />

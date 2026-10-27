@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from ..db import get_db
 from ..models import Run, Worker
 from ..registry.loader import bot_definition
+from ..security import vault
 from ..services.audit import audit
 from ..services.runs import append_logs, claim_next, complete_run, heartbeat, mark_lost_runs
 from ..states import FailureReason, RunStatus
@@ -26,9 +27,9 @@ class ClaimIn(BaseModel):
     capabilities: list[str] | None = None
 
 
-def _job(run: Run) -> dict[str, Any]:
+def _job(db: Session, run: Run) -> dict[str, Any]:
     defn = bot_definition(run.bot)
-    return {
+    job = {
         "run_id": run.id,
         "bot_key": run.bot.key,
         "adapter": defn.execution.adapter,
@@ -39,6 +40,19 @@ def _job(run: Run) -> dict[str, Any]:
         "success_detection": defn.success_detection.model_dump(mode="json"),
         "started_at": run.started_at.isoformat() if run.started_at else None,
     }
+    if defn.execution.adapter == "flow":
+        from ..config import get_settings
+        from ..flows import service as flows
+
+        fv = flows.get_version(db, run.bot, run.flow_version)
+        if fv is None:
+            raise vault.VaultError(f"versão {run.flow_version} do fluxo não encontrada")
+        job["flow"] = {"version": fv.version, "definition": fv.definition}
+        # Só as credenciais referidas pelo fluxo, decifradas, por HTTPS e apenas para esta execução.
+        job["credentials"] = flows.credentials_for_job(db, fv.definition)
+        job["allowed_hosts"] = get_settings().flow_allowed_hosts
+        job["parameters"] = run.parameters
+    return job
 
 
 @router.post("/claim")
@@ -62,11 +76,22 @@ def claim(body: ClaimIn, response: Response, worker: Worker = Depends(current_wo
     worker.capabilities = worker_caps
     run = claim_next(db, worker)
     worker.capabilities = original
-    db.commit()
     if run is None:
+        db.commit()
         response.status_code = 204
         return None
-    return _job(run)
+    try:
+        job = _job(db, run)
+    except vault.VaultError as exc:
+        append_logs(db, run, [{"level": "ERROR", "source": "system", "message": f"Não foi possível preparar o fluxo: {exc}"}])
+        complete_run(db, run, worker, status=RunStatus.FAILED, exit_code=None,
+                     failure_reason=FailureReason.WORKER_REJECTED.value, result_summary={"reason": str(exc)},
+                     process_started=False)
+        db.commit()
+        response.status_code = 204
+        return None
+    db.commit()
+    return job
 
 
 def _worker_run(db: Session, run_id: str, worker: Worker) -> Run:
@@ -127,3 +152,39 @@ def run_complete(run_id: str, body: CompleteIn, worker: Worker = Depends(current
                          result_summary=body.result_summary, process_started=body.process_started)
     db.commit()
     return {"status": run.status.value, "auto_retry_run_id": retry.id if retry else None}
+
+
+class ArtifactIn(BaseModel):
+    name: str = Field(min_length=1, max_length=200, pattern=r"^[^\\/:*?\"<>|]+$")
+    content_type: str = Field(default="application/octet-stream", max_length=100)
+    data_b64: str
+
+
+@router.post("/runs/{run_id}/artifacts", status_code=201)
+def upload_artifact(run_id: str, body: ArtifactIn, worker: Worker = Depends(current_worker),
+                    db: Session = Depends(get_db)):
+    import base64
+    import binascii
+    import hashlib
+
+    from ..config import get_settings
+    from ..models import RunArtifact
+
+    run = _worker_run(db, run_id, worker)
+    if run.status != RunStatus.RUNNING:
+        raise HTTPException(409, "execução já terminou")
+    try:
+        data = base64.b64decode(body.data_b64, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise HTTPException(422, "data_b64 inválido") from exc
+    if len(data) > get_settings().artifact_max_bytes:
+        raise HTTPException(413, "ficheiro demasiado grande")
+    sha = hashlib.sha256(data).hexdigest()
+    existing = db.scalar(select(RunArtifact).where(RunArtifact.run_id == run.id, RunArtifact.name == body.name))
+    if existing:  # reenvio idempotente
+        return {"id": existing.id, "sha256": existing.sha256}
+    art = RunArtifact(run_id=run.id, name=body.name, content_type=body.content_type, size_bytes=len(data),
+                      sha256=sha, data=data)
+    db.add(art)
+    db.commit()
+    return {"id": art.id, "sha256": sha}

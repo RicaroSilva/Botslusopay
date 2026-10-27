@@ -64,3 +64,10 @@ class BackendClient:
         r = self._post(f"/api/worker/runs/{run_id}/complete", payload, retries=6)
         r.raise_for_status()
         return r.json()
+
+    def upload_artifact(self, run_id: str, name: str, data: bytes, content_type: str) -> None:
+        import base64
+
+        r = self._post(f"/api/worker/runs/{run_id}/artifacts",
+                       {"name": name, "content_type": content_type, "data_b64": base64.b64encode(data).decode()})
+        r.raise_for_status()

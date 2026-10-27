@@ -43,6 +43,25 @@ function Logs({ runId, active }: { runId: string; active: boolean }) {
   );
 }
 
+interface Artifact { id: number; name: string; size_bytes: number; created_at: string }
+
+function Artifacts({ runId, active }: { runId: string; active: boolean }) {
+  const { data } = useResource<Artifact[]>(`/api/runs/${runId}/artifacts`, active ? 5000 : undefined);
+  if (!data?.length) return null;
+  return (
+    <Card title="Ficheiros produzidos">
+      <ul className="plain">
+        {data.map((a) => (
+          <li key={a.id}>
+            <a href={`/api/runs/${runId}/artifacts/${a.id}`} download>{a.name}</a>{" "}
+            <span className="muted small">{(a.size_bytes / 1024).toFixed(1)} KB · {fmtDate(a.created_at)}</span>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
 export function RunDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -132,6 +151,7 @@ export function RunDetail() {
             ["Terminada", fmtDate(run.finished_at)],
             ["Duração", fmtDuration(run.started_at, run.finished_at)],
             ["Timeout", `${Math.round(run.timeout_seconds / 60)} min`],
+            ["Versão do fluxo", run.flow_version ?? "—"],
             ["Último heartbeat", fmtDate(run.last_heartbeat_at)],
           ]} />
         </Card>
@@ -156,6 +176,7 @@ export function RunDetail() {
           ]} />
         </Card>
       )}
+      <Artifacts runId={run.id} active={active} />
       <Card title="Logs">
         <Logs runId={run.id} active={active} />
       </Card>

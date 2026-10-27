@@ -8,10 +8,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from .api import admin, auth, bots, dashboard, hooks, runs, worker
+from .api import admin, auth, bots, credentials, dashboard, flows, hooks, runs, worker
 from .config import get_settings
 from .db import session_factory
 from .registry.loader import sync_registry
+from .services.bootstrap import bootstrap
 from .services.runs import RunError
 from .states import InvalidTransition
 
@@ -26,6 +27,7 @@ def create_app(sync_on_start: bool = True) -> FastAPI:
         if sync_on_start:
             with session_factory()() as db:
                 sync_registry(db, settings.registry_dirs)
+                bootstrap(db)
         yield
 
     app = FastAPI(
@@ -63,7 +65,8 @@ def create_app(sync_on_start: bool = True) -> FastAPI:
     async def transition_handler(_: Request, exc: InvalidTransition):
         return JSONResponse(status_code=409, content={"detail": str(exc), "code": "invalid_transition"})
 
-    for r in (auth.router, dashboard.router, bots.router, runs.router, admin.router, worker.router, hooks.router):
+    for r in (auth.router, dashboard.router, bots.router, runs.router, admin.router, credentials.router, flows.router,
+              worker.router, hooks.router):
         app.include_router(r)
 
     @app.get("/api/health")

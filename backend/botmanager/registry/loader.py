@@ -49,7 +49,11 @@ def definition_hash(defn: BotDefinition) -> str:
 def sync_registry(db: Session, directory: Path | list[Path], actor: str = "registry-sync") -> LoadResult:
     result = load_registry(directory)
     existing = {b.key: b for b in db.scalars(select(Bot))}
+    ui_keys = {k for k, b in existing.items() if b.source != "registry"}
     for defn in result.definitions:
+        if defn.key in ui_keys:
+            result.errors[defn.key] = "chave já usada por um fluxo criado na aplicação"
+            continue
         h = definition_hash(defn)
         bot = existing.pop(defn.key, None)
         data = defn.model_dump(mode="json")
@@ -80,7 +84,7 @@ def sync_registry(db: Session, directory: Path | list[Path], actor: str = "regis
                 bot.availability = Availability.AVAILABLE
             audit(db, "system", actor, "bot.definition_changed", "bot", bot.id, details={"key": defn.key, "hash": h})
     for bot in existing.values():
-        if bot.in_registry:
+        if bot.source == "registry" and bot.in_registry:
             bot.in_registry = False
             bot.enabled = False
             audit(db, "system", actor, "bot.removed_from_registry", "bot", bot.id, details={"key": bot.key})

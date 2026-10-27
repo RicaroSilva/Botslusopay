@@ -38,6 +38,16 @@ class Settings(BaseSettings):
     timezone: str = "Europe/Lisbon"
     # Quatro olhos: quem pediu uma execução não a pode aprovar.
     allow_self_approval: bool = False
+    # Chave Fernet do cofre de credenciais (python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
+    vault_key: str = ""
+    vault_key_old: str = ""
+    # Hosts que os fluxos nativos podem contactar (vazio = qualquer host). Ex.: ["dev.lusopay.com","app.lusopay.com"]
+    flow_allowed_hosts: list[str] = []
+    artifact_max_bytes: int = 20 * 1024 * 1024
+    # Arranque em Docker: cria o worker dos fluxos e o primeiro administrador se ainda não existirem.
+    bootstrap_runner_token: str = ""
+    bootstrap_admin_username: str = ""
+    bootstrap_admin_password: str = ""
 
     @model_validator(mode="after")
     def _check_secret(self) -> "Settings":
@@ -45,6 +55,9 @@ class Settings(BaseSettings):
             if self.environment == "production":
                 raise ValueError("BM_SECRET_KEY é obrigatório em produção")
             self.secret_key = "dev-only-insecure-key-change-me-0123456789"
+        if not self.vault_key and self.environment != "production":
+            # chave fixa SÓ para desenvolvimento/testes
+            self.vault_key = "ZGV2LW9ubHktdmF1bHQta2V5LTAxMjM0NTY3ODlhYmM="
         if len(self.secret_key) < 32:
             raise ValueError("BM_SECRET_KEY deve ter pelo menos 32 caracteres")
         return self

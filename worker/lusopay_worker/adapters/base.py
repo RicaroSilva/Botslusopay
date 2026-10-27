@@ -18,6 +18,8 @@ class AdapterRejected(Exception):
 class LaunchSpec:
     argv: list[str]
     cwd: Path | None = None
+    stdin_data: bytes | None = None  # dados enviados pelo stdin (nunca por argv/ambiente)
+    env: dict[str, str] | None = None  # ambiente do processo (None = herdado)
 
 
 @dataclass
@@ -25,6 +27,7 @@ class Outcome:
     status: str  # SUCCEEDED | FAILED | CANCELLED
     failure_reason: str | None = None
     result_summary: dict[str, Any] = field(default_factory=dict)
+    artifacts: list[Path] = field(default_factory=list)  # ficheiros a enviar ao backend
 
 
 @dataclass
@@ -93,6 +96,13 @@ class Adapter:
 
     def progress_lines(self, ctx: RunContext) -> list[str]:
         return []
+
+    def secrets(self, ctx: RunContext) -> list[str]:
+        """Valores a redigir nos logs desta execução."""
+        return []
+
+    def cleanup(self, ctx: RunContext) -> None:
+        pass
 
     def evaluate(self, ctx: RunContext, exit_code: int | None, output: str) -> Outcome:
         raise NotImplementedError

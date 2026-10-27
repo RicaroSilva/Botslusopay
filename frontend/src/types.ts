@@ -41,6 +41,7 @@ export interface Run extends RunBrief {
   timeout_seconds: number;
   cancel_requested: boolean;
   result_summary: Record<string, unknown>;
+  flow_version?: number | null;
   permissions?: { cancel: boolean; approve: boolean; retry: boolean };
   trigger_rule?: { id: string; name: string; type: string } | null;
   trigger_event?: { id: string; dedup_key: string; received_at: string; details: Record<string, unknown> } | null;
@@ -90,6 +91,8 @@ export interface Bot {
   availability: "available" | "disabled" | "unvalidated" | "maintenance";
   enabled: boolean;
   in_registry: boolean;
+  source?: "registry" | "ui";
+  current_flow_version?: number | null;
   requires_approval: boolean;
   triggers_allowed: string[];
   permissions: string[];

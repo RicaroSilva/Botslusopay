@@ -9,6 +9,7 @@ from typing import Any
 from sqlalchemy import (
     JSON,
     Boolean,
+    LargeBinary,
     CheckConstraint,
     DateTime,
     Enum,
@@ -116,6 +117,9 @@ class Bot(Base):
     )
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     in_registry: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    # registry = definido em bots/registry/*.yaml; ui = fluxo nativo criado na aplicação
+    source: Mapped[str] = mapped_column(String(20), nullable=False, default="registry", server_default="registry")
+    current_flow_version: Mapped[int | None] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(TZDateTime(), nullable=False, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(TZDateTime(), nullable=False, default=utcnow, onupdate=utcnow)
 
@@ -272,6 +276,7 @@ class Run(Base):
     needs_review: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     result_summary: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
     log_lines: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    flow_version: Mapped[int | None] = mapped_column(Integer)  # versão do fluxo executada
 
     bot: Mapped[Bot] = relationship(foreign_keys=[bot_id])
 
@@ -338,3 +343,58 @@ class Setting(Base):
     value: Mapped[Any] = mapped_column(JSON, nullable=False)
     updated_by: Mapped[str | None] = mapped_column(String(32))
     updated_at: Mapped[datetime] = mapped_column(TZDateTime(), nullable=False, default=utcnow, onupdate=utcnow)
+
+
+class FlowVersion(Base):
+    """Versões imutáveis de um fluxo nativo. Cada gravação cria uma nova versão;
+    as execuções registam a versão usada."""
+
+    __tablename__ = "flow_versions"
+    __table_args__ = (UniqueConstraint("bot_id", "version", name="uq_flow_version"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    bot_id: Mapped[str] = mapped_column(ForeignKey("bots.id", ondelete="CASCADE"), nullable=False, index=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    definition: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    comment: Mapped[str] = mapped_column(String(300), nullable=False, default="")
+    created_by: Mapped[str | None] = mapped_column(String(32))
+    created_at: Mapped[datetime] = mapped_column(TZDateTime(), nullable=False, default=utcnow)
+
+
+class Credential(Base):
+    """Cofre de credenciais: os dados sensíveis ficam cifrados (Fernet, chave
+    BM_VAULT_KEY) e nunca são devolvidos pela API nem escritos em logs."""
+
+    __tablename__ = "credentials"
+    __table_args__ = (
+        CheckConstraint(
+            "kind IN ('http_basic','http_bearer','http_header','smtp','mssql')", name="ck_credentials_kind"
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    name: Mapped[str] = mapped_column(String(80), unique=True, nullable=False)
+    kind: Mapped[str] = mapped_column(String(20), nullable=False)
+    description: Mapped[str] = mapped_column(String(300), nullable=False, default="")
+    # campos não sensíveis (ex.: host SMTP, utilizador) visíveis na interface
+    public_fields: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
+    encrypted_data: Mapped[str] = mapped_column(Text, nullable=False)
+    created_by: Mapped[str | None] = mapped_column(String(32))
+    created_at: Mapped[datetime] = mapped_column(TZDateTime(), nullable=False, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(TZDateTime(), nullable=False, default=utcnow, onupdate=utcnow)
+
+
+class RunArtifact(Base):
+    """Ficheiros produzidos por uma execução (ex.: CSV). Guardados na BD com limite de tamanho."""
+
+    __tablename__ = "run_artifacts"
+    __table_args__ = (UniqueConstraint("run_id", "name", name="uq_run_artifact_name"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("runs.id", ondelete="CASCADE"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    content_type: Mapped[str] = mapped_column(String(100), nullable=False, default="application/octet-stream")
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    data: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(TZDateTime(), nullable=False, default=utcnow)

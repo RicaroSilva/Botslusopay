@@ -31,6 +31,8 @@ def bot_out(bot: Bot, permissions: list[str] | None = None, last_run: Run | None
         "availability": bot.availability.value,
         "enabled": bot.enabled,
         "in_registry": bot.in_registry,
+        "source": bot.source,
+        "current_flow_version": bot.current_flow_version,
         "requires_approval": defn.requires_approval,
         "triggers_allowed": defn.triggers_allowed,
         "permissions": permissions or [],
@@ -96,6 +98,7 @@ def run_out(r: Run, usernames: dict[str, str]) -> dict[str, Any]:
             "cancel_requested": r.cancel_requested,
             "result_summary": r.result_summary,
             "worker_id": r.worker_id,
+            "flow_version": r.flow_version,
         }
     )
     return out

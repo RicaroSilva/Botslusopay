@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from datetime import date, datetime, time, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import Bot, Permission, Run, RunLog, TriggerEvent, TriggerRule, User
+from ..models import Bot, Permission, Run, RunArtifact, RunLog, TriggerEvent, TriggerRule, User
 from ..security.permissions import has_bot_permission
 from ..services.runs import approve_run, cancel_run, retry_run
 from ..states import RunStatus
@@ -147,3 +147,30 @@ def retry(run_id: str, body: RetryIn, request: Request, user: User = Depends(cur
     new = retry_run(db, run, user, body.confirm_side_effects_checked)
     db.commit()
     return {"run_id": new.id, "status": new.status.value}
+
+
+@router.get("/{run_id}/artifacts")
+def list_artifacts(run_id: str, request: Request, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    run = _get_run(db, run_id, user, request)
+    q = select(RunArtifact.id, RunArtifact.name, RunArtifact.content_type, RunArtifact.size_bytes,
+               RunArtifact.sha256, RunArtifact.created_at).where(RunArtifact.run_id == run.id).order_by(RunArtifact.id)
+    return [{"id": a.id, "name": a.name, "content_type": a.content_type, "size_bytes": a.size_bytes,
+             "sha256": a.sha256, "created_at": a.created_at.isoformat()} for a in db.execute(q)]
+
+
+@router.get("/{run_id}/artifacts/{artifact_id}")
+def download_artifact(run_id: str, artifact_id: int, request: Request, user: User = Depends(current_user),
+                      db: Session = Depends(get_db)):
+    run = _get_run(db, run_id, user, request)
+    art = db.get(RunArtifact, artifact_id)
+    if art is None or art.run_id != run.id:
+        raise HTTPException(404, "ficheiro não encontrado")
+    from urllib.parse import quote
+
+    from ..services.audit import audit
+
+    audit(db, "user", user.username, "artifact.downloaded", "run", run.id, details={"artifact": art.name})
+    db.commit()
+    return Response(content=art.data, media_type="application/octet-stream",
+                    headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(art.name)}",
+                             "X-Content-Type-Options": "nosniff"})

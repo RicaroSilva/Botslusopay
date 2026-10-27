@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { hasRole, useAuth } from "../auth";
 import { AvailabilityBadge, ErrorBox, RiskBadge, StatusBadge } from "../components/ui";
 import { fmtDate } from "../format";
 import { useResource } from "../hooks";
@@ -7,6 +8,7 @@ import type { Bot } from "../types";
 import { RunButton } from "./RunDialog";
 
 export function Bots() {
+  const { user } = useAuth();
   const { data, error, reload } = useResource<Bot[]>("/api/bots", 15000);
   const [q, setQ] = useState("");
   const [category, setCategory] = useState("");
@@ -18,7 +20,10 @@ export function Bots() {
   );
   return (
     <>
-      <h1>Catálogo de bots</h1>
+      <div className="page-head">
+        <h1>Catálogo de bots</h1>
+        {hasRole(user, "admin") && <Link className="btn btn-primary" to="/flows/new">+ Novo fluxo</Link>}
+      </div>
       <div className="toolbar">
         <input placeholder="Pesquisar…" value={q} onChange={(e) => setQ(e.target.value)} />
         <select value={category} onChange={(e) => setCategory(e.target.value)}>
@@ -43,7 +48,7 @@ export function Bots() {
             <p className="desc">{b.description}</p>
             <dl className="kv compact">
               <div><dt>Categoria</dt><dd>{b.category || "—"}</dd></div>
-              <div><dt>Execução</dt><dd><code>{b.adapter}</code></dd></div>
+              <div><dt>Execução</dt><dd>{b.adapter === "flow" ? <span className="badge avail-available">Fluxo nativo v{b.current_flow_version}</span> : <code>{b.adapter}</code>}</dd></div>
               <div>
                 <dt>Última execução</dt>
                 <dd>{b.last_run ? <><StatusBadge status={b.last_run.status} /> {fmtDate(b.last_run.created_at)}</> : "—"}</dd>

@@ -146,3 +146,20 @@ ul.plain { list-style: none; padding: 0; margin: 0; } ul.plain li { padding: 5px
   .content { padding: 16px; }
   .kv > div { grid-template-columns: 1fr; }
 }
+
+/* editor de fluxos */
+.mono, input.mono, textarea.mono { font-family: Consolas, "Cascadia Mono", monospace; font-size: 12.5px; }
+.step-list { display: flex; flex-direction: column; gap: 10px; margin: 10px 0; }
+.step-card { border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 8px; background: #fff; }
+.step-card.depth-1 { border-left-color: #6b8fb8; } .step-card.depth-2 { border-left-color: #9fb3c8; }
+.step-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: #f7f9fc; border-radius: 8px 8px 0 0; flex-wrap: wrap; }
+.step-head .actions { margin-left: auto; }
+.step-name { flex: 1; min-width: 160px; }
+.step-body { padding: 10px 12px; }
+.step-body > p { margin: 0 0 8px; }
+.step-fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+.step-fields .field-steps { grid-column: 1 / -1; border-top: 1px dashed var(--border); padding-top: 8px; }
+.kv-editor { display: flex; flex-direction: column; gap: 4px; }
+.kv-row { display: flex; gap: 4px; } .kv-row input { flex: 1; min-width: 0; }
+.add-step select { border-style: dashed; color: var(--primary); }
+fieldset label.check.inline { display: inline-flex; margin-right: 12px; }

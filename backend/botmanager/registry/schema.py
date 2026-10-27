@@ -14,7 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 KEY_RE = re.compile(r"^[a-z0-9][a-z0-9-]{2,79}$")
 SAFE_REL_PATH = re.compile(r"^(?![\\/])(?!.*\.\.)(?!.*:)[^\x00]+$")
 
-ADAPTERS = {"taskt_cli", "openbots_studio", "simulated"}
+ADAPTERS = {"taskt_cli", "openbots_studio", "simulated", "flow"}
 # Adaptadores que, pelo que se conseguiu confirmar, não aceitam parâmetros na linha de comandos.
 ADAPTERS_WITHOUT_PARAMETERS = {"taskt_cli", "openbots_studio"}
 TRIGGER_TYPES = {"manual", "schedule", "webhook", "after_bot", "poll_http"}
@@ -90,7 +90,7 @@ class SuccessDetection(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     # taskt_log: lê "Result Code" no log do motor taskt; exit_code: só código de saída.
-    method: Literal["taskt_log", "exit_code", "simulated"] = "taskt_log"
+    method: Literal["taskt_log", "exit_code", "simulated", "flow"] = "taskt_log"
     expected_exit_codes: list[int] = [0]
     checks: list[SuccessCheck] = []
     # No taskt, o comando "Stop Current Task" termina com "Result Code: Cancelled".
@@ -180,6 +180,8 @@ class BotDefinition(BaseModel):
             )
         if self.risk_level == "high" and not self.requires_approval:
             raise ValueError("bots de risco elevado têm de ter requires_approval: true")
+        if (self.execution.adapter == "flow") != (self.success_detection.method == "flow"):
+            raise ValueError("fluxos nativos usam success_detection.method=flow (e só eles)")
         if self.execution.adapter == "taskt_cli" and self.success_detection.method == "exit_code":
             raise ValueError("taskt não devolve código de saída fiável: use success_detection.method=taskt_log")
         return self

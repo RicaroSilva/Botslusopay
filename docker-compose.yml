@@ -1,0 +1,84 @@
+# LUSOPAY Bot Manager — execução em Docker
+#
+#   cp docker/.env.example .env      (preencher os segredos)
+#   docker compose up -d --build
+#   http://localhost:8080
+#
+# Serviços separados: api (web + API), scheduler, runner (fluxos nativos; escalável:
+# `docker compose up -d --scale runner=3`) e db (PostgreSQL; pode ser substituído por
+# um PostgreSQL externo — basta mudar BM_DATABASE_URL e remover o serviço db).
+
+name: lusopay-botmanager
+
+x-backend-env: &backend-env
+  BM_ENVIRONMENT: ${BM_ENVIRONMENT:-production}
+  BM_DATABASE_URL: ${BM_DATABASE_URL:-postgresql+psycopg://botmanager:${POSTGRES_PASSWORD}@db:5432/botmanager}
+  BM_SECRET_KEY: ${BM_SECRET_KEY:?defina BM_SECRET_KEY no .env}
+  BM_VAULT_KEY: ${BM_VAULT_KEY:?defina BM_VAULT_KEY no .env}
+  BM_COOKIE_SECURE: ${BM_COOKIE_SECURE:-true}
+  BM_TIMEZONE: ${BM_TIMEZONE:-Europe/Lisbon}
+  BM_FLOW_ALLOWED_HOSTS: ${BM_FLOW_ALLOWED_HOSTS:-[]}
+  BM_POLL_ALLOWED_HOSTS: ${BM_POLL_ALLOWED_HOSTS:-[]}
+  BM_BOOTSTRAP_RUNNER_TOKEN: ${BM_RUNNER_TOKEN:?defina BM_RUNNER_TOKEN no .env}
+  BM_BOOTSTRAP_ADMIN_USERNAME: ${BM_BOOTSTRAP_ADMIN_USERNAME:-}
+  BM_BOOTSTRAP_ADMIN_PASSWORD: ${BM_BOOTSTRAP_ADMIN_PASSWORD:-}
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: botmanager
+      POSTGRES_USER: botmanager
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U botmanager -d botmanager"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [internal]
+
+  api:
+    build: { context: ., dockerfile: docker/api.Dockerfile }
+    image: lusopay-botmanager-api:latest
+    restart: unless-stopped
+    command: ["api"]
+    environment: *backend-env
+    depends_on:
+      db: { condition: service_healthy }
+    ports:
+      - "${BM_HTTP_PORT:-8080}:8000"
+    networks: [internal]
+
+  scheduler:
+    image: lusopay-botmanager-api:latest
+    restart: unless-stopped
+    command: ["scheduler"]
+    environment: *backend-env
+    healthcheck:
+      disable: true
+    depends_on:
+      api: { condition: service_healthy }
+    networks: [internal]
+
+  runner:
+    build: { context: ., dockerfile: docker/runner.Dockerfile }
+    image: lusopay-botmanager-runner:latest
+    restart: unless-stopped
+    environment:
+      WORKER_BACKEND_URL: http://api:8000
+      # tráfego só dentro da rede interna do Docker; o TLS termina no proxy da API
+      WORKER_ALLOW_HTTP: "1"
+      WORKER_TOKEN: ${BM_RUNNER_TOKEN}
+      WORKER_ADAPTERS: flow
+    depends_on:
+      api: { condition: service_healthy }
+    networks: [internal]
+
+volumes:
+  pgdata:
+
+networks:
+  internal:

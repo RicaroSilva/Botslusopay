@@ -27,7 +27,15 @@ export function BotDetail() {
             {bot.requires_approval && <span className="badge">Exige aprovação</span>}
           </div>
         </div>
-        {bot.permissions.includes("execute") && <RunButton bot={bot} onDone={reload} />}
+        <div className="actions">
+          {bot.adapter === "flow" && bot.permissions.includes("configure") && (
+            <Link className="btn" to={`/flows/${bot.key}`}>Editar fluxo</Link>
+          )}
+          {bot.adapter === "flow" && !bot.permissions.includes("configure") && (
+            <Link className="btn" to={`/flows/${bot.key}`}>Ver fluxo</Link>
+          )}
+          {bot.permissions.includes("execute") && <RunButton bot={bot} onDone={reload} />}
+        </div>
       </div>
       <Card title="Descrição">
         <p>{bot.description}</p>
@@ -44,7 +52,7 @@ export function BotDetail() {
             items={[
               ["Identificador", <code>{bot.key}</code>],
               ["Adaptador", <code>{bot.adapter}</code>],
-              ["Ficheiro de entrada", <code>{bot.project_ref}</code>],
+              ["Ficheiro de entrada", bot.adapter === "flow" ? `Fluxo nativo (versão ${bot.current_flow_version})` : <code>{bot.project_ref}</code>],
               ["Mecanismo validado", bot.execution_validated ? "Sim" : "Não"],
               ["Timeout", `${Math.round((bot.timeout_seconds ?? 0) / 60)} min`],
               ["Concorrência", `${bot.concurrency?.policy === "single" ? "Uma execução de cada vez" : "Paralela"}${
