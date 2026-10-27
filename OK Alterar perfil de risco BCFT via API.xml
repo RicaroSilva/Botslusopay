@@ -1,0 +1,1906 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Script xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Commands>
+    <ScriptAction>
+      <ScriptCommand xsi:type="CommentCommand" CommandID="904274e9-037b-43c3-8239-ffbf66eb65db" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="1" PauseBeforeExeucution="false" v_Comment="Ver se existe ficheiro com cyclos id ja tratados" CommandEnabled="true" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="RESTCommand" CommandID="b3e49217-8858-44c9-a64e-8f717ea46e85" CommandName="RESTCommand" IsCommented="false" SelectionName="Execute REST API" DefaultPause="0" LineNumber="2" PauseBeforeExeucution="false" v_Comment="" CommandEnabled="true" v_BaseURL="https://app.lusopay.com:8443" v_APIEndPoint="/web/api/users?fields=id&amp;groups=PtPenhoraPessoaSingular,PtPenhoraPessoaColetiva,ExpiredDocsCollectiveGroup,ExpiredDocsPersonalGroup,EnvioFundosENI,EnvioFundosPessoaColetiva,EnvioFundosPessoaSingular&amp;pageSize=99999&amp;statuses=active, blocked" v_APIMethodType="GET" v_userVariableName="vJson" v_RequestFormat="Json">
+        <v_AdvancedParameters>
+          <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+            <xs:element name="A21vRESTPara21Table012120.032108">
+              <xs:complexType>
+                <xs:sequence>
+                  <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                  <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                  <xs:element name="Content_x0020_Type" type="xs:string" minOccurs="0" />
+                  <xs:element name="Parameter_x0020_Type" type="xs:string" minOccurs="0" />
+                </xs:sequence>
+              </xs:complexType>
+            </xs:element>
+            <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="A21vRESTPara21Table012120.032108" msdata:UseCurrentLocale="true">
+              <xs:complexType>
+                <xs:choice minOccurs="0" maxOccurs="unbounded">
+                  <xs:element ref="A21vRESTPara21Table012120.032108" />
+                </xs:choice>
+              </xs:complexType>
+            </xs:element>
+          </xs:schema>
+          <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+            <DocumentElement>
+              <A21vRESTPara21Table012120.032108 diffgr:id="A21vRESTPara21Table012120.0321081" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                <Parameter_x0020_Name>Authorization</Parameter_x0020_Name>
+                <Parameter_x0020_Value>Basic UlBBdGFza3Q6MVJQQWVib20hMjAyMg==</Parameter_x0020_Value>
+                <Parameter_x0020_Type>HttpHeader</Parameter_x0020_Type>
+              </A21vRESTPara21Table012120.032108>
+              <A21vRESTPara21Table012120.032108 diffgr:id="A21vRESTPara21Table012120.0321082" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                <Parameter_x0020_Name>accept</Parameter_x0020_Name>
+                <Parameter_x0020_Value>application/json</Parameter_x0020_Value>
+                <Parameter_x0020_Type>HttpHeader</Parameter_x0020_Type>
+              </A21vRESTPara21Table012120.032108>
+            </DocumentElement>
+          </diffgr:diffgram>
+        </v_AdvancedParameters>
+        <v_RESTParameters>
+          <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+            <xs:element name="RESTPara21Table012120.032108">
+              <xs:complexType>
+                <xs:sequence>
+                  <xs:element name="Parameter_x0020_Type" type="xs:string" minOccurs="0" />
+                  <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                  <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                </xs:sequence>
+              </xs:complexType>
+            </xs:element>
+            <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="RESTPara21Table012120.032108" msdata:UseCurrentLocale="true">
+              <xs:complexType>
+                <xs:choice minOccurs="0" maxOccurs="unbounded">
+                  <xs:element ref="RESTPara21Table012120.032108" />
+                </xs:choice>
+              </xs:complexType>
+            </xs:element>
+          </xs:schema>
+          <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1" />
+        </v_RESTParameters>
+      </ScriptCommand>
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="BeginIfCommand" CommandID="5f2358cb-1e6a-4ed9-9980-ae42bfce4942" CommandName="BeginIfCommand" IsCommented="false" SelectionName="Begin If" DefaultPause="0" LineNumber="3" PauseBeforeExeucution="false" v_Comment="Se ficheiro existe" CommandEnabled="true" v_IfActionType="File Exists">
+        <v_IfActionParameterTable>
+          <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+            <xs:element name="I0AcionPara36Table020821.093603">
+              <xs:complexType>
+                <xs:sequence>
+                  <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                  <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                </xs:sequence>
+              </xs:complexType>
+            </xs:element>
+            <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="I0AcionPara36Table020821.093603" msdata:UseCurrentLocale="true">
+              <xs:complexType>
+                <xs:choice minOccurs="0" maxOccurs="unbounded">
+                  <xs:element ref="I0AcionPara36Table020821.093603" />
+                </xs:choice>
+              </xs:complexType>
+            </xs:element>
+          </xs:schema>
+          <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+            <DocumentElement>
+              <I0AcionPara36Table020821.093603 diffgr:id="I0AcionPara36Table020821.0936031" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                <Parameter_x0020_Name>File Path</Parameter_x0020_Name>
+                <Parameter_x0020_Value>{Folder.ScriptPath}Listas\Alterar perfil BCFT\CyclosId ja analisados pelo bot.txt</Parameter_x0020_Value>
+              </I0AcionPara36Table020821.093603>
+              <I0AcionPara36Table020821.093603 diffgr:id="I0AcionPara36Table020821.0936032" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                <Parameter_x0020_Name>True When</Parameter_x0020_Name>
+                <Parameter_x0020_Value>It Does Exist</Parameter_x0020_Value>
+              </I0AcionPara36Table020821.093603>
+            </DocumentElement>
+          </diffgr:diffgram>
+        </v_IfActionParameterTable>
+      </ScriptCommand>
+      <AdditionalScriptCommands>
+        <ScriptCommand xsi:type="CommentCommand" CommandID="ecb7d6ef-39ee-4a05-a08f-2770a55e0edf" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="4" PauseBeforeExeucution="false" v_Comment="Items in this section will run if the statement is true" CommandEnabled="true" />
+      </AdditionalScriptCommands>
+      <AdditionalScriptCommands>
+        <ScriptCommand xsi:type="ReadTextFileCommand" CommandID="35380273-4d0e-48df-9ae6-78342f0fb956" CommandName="ReadTextFileCommand" IsCommented="false" SelectionName="Read Text File" DefaultPause="0" LineNumber="5" PauseBeforeExeucution="false" CommandEnabled="true" v_FilePath="C:\Users\Utilizador\Documents\taskt\My Scripts\Listas\Alterar perfil BCFT\CyclosId ja analisados pelo bot.txt" v_userVariableName="vCyclosIdAnalisados" />
+      </AdditionalScriptCommands>
+      <AdditionalScriptCommands>
+        <ScriptCommand xsi:type="StringSplitCommand" CommandID="c5ccd6ff-3004-4e7a-9dfa-7fd87440a921" CommandName="StringSplitCommand" IsCommented="false" SelectionName="Split Text" DefaultPause="0" LineNumber="6" PauseBeforeExeucution="false" CommandEnabled="true" v_userVariableName="vCyclosIdAnalisados" v_splitCharacter="," v_applyConvertToUserVariableName="vCyclosIdAnalisadosLista" />
+      </AdditionalScriptCommands>
+      <AdditionalScriptCommands>
+        <ScriptCommand xsi:type="GetListCountCommand" CommandID="37364b72-af6a-4855-9b5c-47e776b9b79a" CommandName="GetListCountCommand" IsCommented="false" SelectionName="Get List Count" DefaultPause="0" LineNumber="7" PauseBeforeExeucution="false" CommandEnabled="true" v_ListName="{vCyclosIdAnalisadosLista}" v_UserVariableName="vQuantidadeCyclosIdAnalisados" />
+      </AdditionalScriptCommands>
+      <AdditionalScriptCommands>
+        <ScriptCommand xsi:type="MathCalculationCommand" CommandID="7c4be287-c57d-4fb2-a577-b253b719720e" CommandName="MathCalculationCommand" IsCommented="false" SelectionName="Math Calculation" DefaultPause="0" LineNumber="8" PauseBeforeExeucution="false" CommandEnabled="true" v_InputValue="{vQuantidadeCyclosIdAnalisados}-2" v_ThousandSeperator="." v_DecimalSeperator="," v_applyToVariableName="vQuantidadeCyclosIdAnalisados" />
+      </AdditionalScriptCommands>
+      <AdditionalScriptCommands>
+        <ScriptCommand xsi:type="GetListItemCommand" CommandID="aaa4d2e2-de83-44d8-ac32-b5d3cc617359" CommandName="GetListItemCommand" IsCommented="false" SelectionName="Get List Item" DefaultPause="0" LineNumber="9" PauseBeforeExeucution="false" CommandEnabled="true" v_ListName="{vCyclosIdAnalisadosLista}" v_ItemIndex="{vQuantidadeCyclosIdAnalisados}" v_UserVariableName="vUltimoCyclosIdAnalisado" />
+      </AdditionalScriptCommands>
+      <AdditionalScriptCommands>
+        <ScriptCommand xsi:type="TextExtractorCommand" CommandID="6b2cb7bb-9636-42ff-8e73-aae3d9d9c785" CommandName="TextExtractorCommand" IsCommented="false" SelectionName="Text Extraction" DefaultPause="0" LineNumber="10" PauseBeforeExeucution="false" CommandEnabled="true" v_InputValue="{vJson}" v_TextExtractionType="Extract All After Text" v_applyToVariableName="vJson">
+          <v_TextExtractionTable>
+            <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+              <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="TexExracorPara59Table020821.045915" msdata:UseCurrentLocale="true">
+                <xs:complexType>
+                  <xs:choice minOccurs="0" maxOccurs="unbounded">
+                    <xs:element name="TexExracorPara59Table020821.045915">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                          <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:choice>
+                </xs:complexType>
+              </xs:element>
+            </xs:schema>
+            <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+              <DocumentElement>
+                <TexExracorPara59Table020821.045915 diffgr:id="TexExracorPara59Table020821.0459151" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>Leading Text</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>{vUltimoCyclosIdAnalisado}</Parameter_x0020_Value>
+                </TexExracorPara59Table020821.045915>
+                <TexExracorPara59Table020821.045915 diffgr:id="TexExracorPara59Table020821.0459152" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>Skip Past Occurences</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>0</Parameter_x0020_Value>
+                </TexExracorPara59Table020821.045915>
+              </DocumentElement>
+            </diffgr:diffgram>
+          </v_TextExtractionTable>
+        </ScriptCommand>
+      </AdditionalScriptCommands>
+      <AdditionalScriptCommands>
+        <ScriptCommand xsi:type="VariableCommand" CommandID="50eb3af2-b425-4300-b802-7d781e6ac9e3" CommandName="VariableCommand" IsCommented="false" SelectionName="Set Variable" DefaultPause="0" LineNumber="11" PauseBeforeExeucution="false" CommandEnabled="true" v_userVariableName="vJson" v_Input="[{&#xD;&#xA;    &quot;id&quot;: &quot;{vUltimoCyclosIdAnalisado}{vJson}" />
+      </AdditionalScriptCommands>
+      <AdditionalScriptCommands>
+        <ScriptCommand xsi:type="EndIfCommand" CommandID="8eeceec7-b63b-4003-8779-7c1fef4eef7a" CommandName="EndIfCommand" IsCommented="false" SelectionName="End If" DefaultPause="0" LineNumber="12" PauseBeforeExeucution="false" CommandEnabled="true" />
+      </AdditionalScriptCommands>
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="CommentCommand" CommandID="c1d8e760-f77c-4542-9d0f-dc58d155f0f5" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="13" PauseBeforeExeucution="false" v_Comment="recolher CyclosID por API dos clientes dos grupos envios de fundos, penhoras e docs caducados" CommandEnabled="true" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="ParseJSONArrayCommand" CommandID="f72d379a-88b6-464c-b520-d465ecf3bbc6" CommandName="ParseJSONArrayCommand" IsCommented="false" SelectionName="Parse JSON Array" DefaultPause="0" LineNumber="14" PauseBeforeExeucution="false" CommandEnabled="true" v_InputValue="{vJson}" v_applyToVariableName="vCyclosIdLista" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="CommentCommand" CommandID="d8769780-fbc0-4cb0-9929-6b7c9ec1b207" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="15" PauseBeforeExeucution="false" v_Comment="Recolhe Cyclos ID de clientes PEP para variavel" CommandEnabled="true" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="RESTCommand" CommandID="c34a22b7-d4d3-4179-bdf1-2458bc42f92f" CommandName="RESTCommand" IsCommented="false" SelectionName="Execute REST API" DefaultPause="0" LineNumber="16" PauseBeforeExeucution="false" v_Comment="" CommandEnabled="true" v_BaseURL="https://app.lusopay.com:8443" v_APIEndPoint="/web/api/users?fields=customValues.PEP&amp;fields=id&amp;fields=customValues.IdentificadorPublicoDeConta&amp;pageSize=99999&amp;profileFields=PEP%3Atrue" v_APIMethodType="GET" v_userVariableName="vJsonPep" v_RequestFormat="Json">
+        <v_AdvancedParameters>
+          <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+            <xs:element name="A21vRESTPara21Table012120.032108">
+              <xs:complexType>
+                <xs:sequence>
+                  <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                  <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                  <xs:element name="Content_x0020_Type" type="xs:string" minOccurs="0" />
+                  <xs:element name="Parameter_x0020_Type" type="xs:string" minOccurs="0" />
+                </xs:sequence>
+              </xs:complexType>
+            </xs:element>
+            <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="A21vRESTPara21Table012120.032108" msdata:UseCurrentLocale="true">
+              <xs:complexType>
+                <xs:choice minOccurs="0" maxOccurs="unbounded">
+                  <xs:element ref="A21vRESTPara21Table012120.032108" />
+                </xs:choice>
+              </xs:complexType>
+            </xs:element>
+          </xs:schema>
+          <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+            <DocumentElement>
+              <A21vRESTPara21Table012120.032108 diffgr:id="A21vRESTPara21Table012120.0321081" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                <Parameter_x0020_Name>Authorization</Parameter_x0020_Name>
+                <Parameter_x0020_Value>Basic UlBBdGFza3Q6MVJQQWVib20hMjAyMg==</Parameter_x0020_Value>
+                <Parameter_x0020_Type>HttpHeader</Parameter_x0020_Type>
+              </A21vRESTPara21Table012120.032108>
+              <A21vRESTPara21Table012120.032108 diffgr:id="A21vRESTPara21Table012120.0321082" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                <Parameter_x0020_Name>accept</Parameter_x0020_Name>
+                <Parameter_x0020_Value>application/json</Parameter_x0020_Value>
+                <Parameter_x0020_Type>HttpHeader</Parameter_x0020_Type>
+              </A21vRESTPara21Table012120.032108>
+            </DocumentElement>
+          </diffgr:diffgram>
+        </v_AdvancedParameters>
+        <v_RESTParameters>
+          <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+            <xs:element name="RESTPara21Table012120.032108">
+              <xs:complexType>
+                <xs:sequence>
+                  <xs:element name="Parameter_x0020_Type" type="xs:string" minOccurs="0" />
+                  <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                  <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                </xs:sequence>
+              </xs:complexType>
+            </xs:element>
+            <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="RESTPara21Table012120.032108" msdata:UseCurrentLocale="true">
+              <xs:complexType>
+                <xs:choice minOccurs="0" maxOccurs="unbounded">
+                  <xs:element ref="RESTPara21Table012120.032108" />
+                </xs:choice>
+              </xs:complexType>
+            </xs:element>
+          </xs:schema>
+          <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1" />
+        </v_RESTParameters>
+      </ScriptCommand>
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="CommentCommand" CommandID="347337dd-0cbf-473d-9a9b-40105d4ac753" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="17" PauseBeforeExeucution="false" v_Comment="Recolhe Empresas cotadas em bolsa" CommandEnabled="true" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="RESTCommand" CommandID="46609d07-a700-41c4-87f2-5056890ab02c" CommandName="RESTCommand" IsCommented="false" SelectionName="Execute REST API" DefaultPause="0" LineNumber="18" PauseBeforeExeucution="false" v_Comment="" CommandEnabled="true" v_BaseURL="https://app.lusopay.com:8443" v_APIEndPoint="/web/api/users?fields=customValues.EntidadeCotadaNaBolsa&amp;fields=id&amp;fields=customValues.IdentificadorPublicoDeConta&amp;pageSize=99999&amp;profileFields=EntidadeCotadaNaBolsa%3Atrue" v_APIMethodType="GET" v_userVariableName="vCotadaBolsa" v_RequestFormat="Json">
+        <v_AdvancedParameters>
+          <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+            <xs:element name="A21vRESTPara21Table012120.032108">
+              <xs:complexType>
+                <xs:sequence>
+                  <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                  <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                  <xs:element name="Content_x0020_Type" type="xs:string" minOccurs="0" />
+                  <xs:element name="Parameter_x0020_Type" type="xs:string" minOccurs="0" />
+                </xs:sequence>
+              </xs:complexType>
+            </xs:element>
+            <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="A21vRESTPara21Table012120.032108" msdata:UseCurrentLocale="true">
+              <xs:complexType>
+                <xs:choice minOccurs="0" maxOccurs="unbounded">
+                  <xs:element ref="A21vRESTPara21Table012120.032108" />
+                </xs:choice>
+              </xs:complexType>
+            </xs:element>
+          </xs:schema>
+          <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+            <DocumentElement>
+              <A21vRESTPara21Table012120.032108 diffgr:id="A21vRESTPara21Table012120.0321081" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                <Parameter_x0020_Name>Authorization</Parameter_x0020_Name>
+                <Parameter_x0020_Value>Basic UlBBdGFza3Q6MVJQQWVib20hMjAyMg==</Parameter_x0020_Value>
+                <Parameter_x0020_Type>HttpHeader</Parameter_x0020_Type>
+              </A21vRESTPara21Table012120.032108>
+              <A21vRESTPara21Table012120.032108 diffgr:id="A21vRESTPara21Table012120.0321082" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                <Parameter_x0020_Name>accept</Parameter_x0020_Name>
+                <Parameter_x0020_Value>application/json</Parameter_x0020_Value>
+                <Parameter_x0020_Type>HttpHeader</Parameter_x0020_Type>
+              </A21vRESTPara21Table012120.032108>
+            </DocumentElement>
+          </diffgr:diffgram>
+        </v_AdvancedParameters>
+        <v_RESTParameters>
+          <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+            <xs:element name="RESTPara21Table012120.032108">
+              <xs:complexType>
+                <xs:sequence>
+                  <xs:element name="Parameter_x0020_Type" type="xs:string" minOccurs="0" />
+                  <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                  <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                </xs:sequence>
+              </xs:complexType>
+            </xs:element>
+            <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="RESTPara21Table012120.032108" msdata:UseCurrentLocale="true">
+              <xs:complexType>
+                <xs:choice minOccurs="0" maxOccurs="unbounded">
+                  <xs:element ref="RESTPara21Table012120.032108" />
+                </xs:choice>
+              </xs:complexType>
+            </xs:element>
+          </xs:schema>
+          <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1" />
+        </v_RESTParameters>
+      </ScriptCommand>
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="MessageBoxCommand" CommandID="aee32370-02d8-4e83-9e21-87a30b703d7c" CommandName="MessageBoxCommand" IsCommented="true" SelectionName="Show Message" DefaultPause="0" LineNumber="19" PauseBeforeExeucution="false" CommandEnabled="true" v_Message="{vCotadaBolsa}" v_AutoCloseAfter="1" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="CommentCommand" CommandID="66d05d9c-134d-486f-bc0a-e15f97e6ec3b" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="20" PauseBeforeExeucution="false" v_Comment="Cria cabeçalho do ficheiro para o PUT" CommandEnabled="true" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="CommentCommand" CommandID="971b5021-d297-42e2-ab39-69277959dbc2" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="21" PauseBeforeExeucution="false" v_Comment="Criar variáveis" CommandEnabled="true" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="FormatDataCommand" CommandID="4723b9f1-edc8-42f9-8560-7d2a89dc5486" CommandName="FormatDataCommand" IsCommented="false" SelectionName="Format Data" DefaultPause="0" LineNumber="22" PauseBeforeExeucution="false" CommandEnabled="true" v_InputValue="{DateTime.Now}" v_FormatType="Date" v_ToStringFormat="yyyy-MM-dd" v_applyToVariableName="{vHoje}" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="DateCalculationCommand" CommandID="0fe720d9-15d0-4813-a835-86a00a8f4f27" CommandName="DateCalculationCommand" IsCommented="false" SelectionName="Date Calculation" DefaultPause="0" LineNumber="23" PauseBeforeExeucution="false" CommandEnabled="true" v_InputValue="{DateTime.Now}" v_CalculationMethod="Subtract Days" v_Increment="91" v_ToStringFormat="yyyy-MM-dd" v_applyToVariableName="v91DiasAtras" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="BeginListLoopCommand" CommandID="81a82de0-9b92-4149-ba45-62da0130741f" CommandName="BeginListLoopCommand" IsCommented="false" SelectionName="Loop List" DefaultPause="0" LineNumber="24" PauseBeforeExeucution="false" CommandEnabled="true" v_LoopParameter="{vCyclosIdLista}" />
+      <AdditionalScriptCommands>
+        <ScriptCommand xsi:type="CommentCommand" CommandID="6d35dfaf-61f0-40ca-8246-f75796648cc0" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="25" PauseBeforeExeucution="false" v_Comment="Items in this section will run within the loop" CommandEnabled="true" />
+      </AdditionalScriptCommands>
+      <AdditionalScriptCommands>
+        <ScriptCommand xsi:type="ParseJsonCommand" CommandID="b17787a7-dd0b-4f7f-bff0-6bbc8e7ddeed" CommandName="ParseJsonCommand" IsCommented="false" SelectionName="Parse JSON Item" DefaultPause="0" LineNumber="26" PauseBeforeExeucution="false" CommandEnabled="true" v_InputValue="{vCyclosIdLista}" v_JsonExtractor="id" v_applyToVariableName="vCyclosId" />
+      </AdditionalScriptCommands>
+      <AdditionalScriptCommands>
+        <ScriptCommand xsi:type="BeginIfCommand" CommandID="bdce9666-bd08-4c5d-b8e7-62539d49b04c" CommandName="BeginIfCommand" IsCommented="false" SelectionName="Begin If" DefaultPause="0" LineNumber="27" PauseBeforeExeucution="false" v_Comment="Atençao: nao ha erro ao ter 2 vezes a variavel vCyclosId no Value2." CommandEnabled="true" v_IfActionType="Variable Compare">
+          <v_IfActionParameterTable>
+            <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+              <xs:element name="I6AcionPara52Table051520.125214">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                    <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="I6AcionPara52Table051520.125214" msdata:UseCurrentLocale="true">
+                <xs:complexType>
+                  <xs:choice minOccurs="0" maxOccurs="unbounded">
+                    <xs:element ref="I6AcionPara52Table051520.125214" />
+                  </xs:choice>
+                </xs:complexType>
+              </xs:element>
+            </xs:schema>
+            <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+              <DocumentElement>
+                <I6AcionPara52Table051520.125214 diffgr:id="I6AcionPara52Table051520.1252141" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>Value1</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>{vCyclosIdAnalisados}</Parameter_x0020_Value>
+                </I6AcionPara52Table051520.125214>
+                <I6AcionPara52Table051520.125214 diffgr:id="I6AcionPara52Table051520.1252142" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>Operand</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>contains</Parameter_x0020_Value>
+                </I6AcionPara52Table051520.125214>
+                <I6AcionPara52Table051520.125214 diffgr:id="I6AcionPara52Table051520.1252143" msdata:rowOrder="2" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>Value2</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>{vCyclosId}{vCyclosId}</Parameter_x0020_Value>
+                </I6AcionPara52Table051520.125214>
+                <I6AcionPara52Table051520.125214 diffgr:id="I6AcionPara52Table051520.1252144" msdata:rowOrder="3" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>Case Sensitive</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>No</Parameter_x0020_Value>
+                </I6AcionPara52Table051520.125214>
+              </DocumentElement>
+            </diffgr:diffgram>
+          </v_IfActionParameterTable>
+        </ScriptCommand>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="CommentCommand" CommandID="be4b7a75-9668-458d-bcaa-fe6c0acf5745" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="28" PauseBeforeExeucution="false" v_Comment="Items in this section will run if the statement is true" CommandEnabled="true" />
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="NextLoopCommand" CommandID="89f6eb66-0398-4bd3-b686-73971f4e1c1e" CommandName="NextLoopCommand" IsCommented="false" SelectionName="Next Loop" DefaultPause="0" LineNumber="29" PauseBeforeExeucution="false" CommandEnabled="true" />
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="EndIfCommand" CommandID="3865409d-5642-4995-a30e-d5fc29da422f" CommandName="EndIfCommand" IsCommented="false" SelectionName="End If" DefaultPause="0" LineNumber="30" PauseBeforeExeucution="false" CommandEnabled="true" />
+        </AdditionalScriptCommands>
+      </AdditionalScriptCommands>
+      <AdditionalScriptCommands>
+        <ScriptCommand xsi:type="CommentCommand" CommandID="a203a67c-d81f-4df9-8396-b8adec0a5977" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="31" PauseBeforeExeucution="false" v_Comment="Define endereço API para fazer o PUT" CommandEnabled="true" />
+      </AdditionalScriptCommands>
+      <AdditionalScriptCommands>
+        <ScriptCommand xsi:type="VariableCommand" CommandID="5d5babae-80a2-432a-919d-84e68a936692" CommandName="VariableCommand" IsCommented="false" SelectionName="Set Variable" DefaultPause="0" LineNumber="32" PauseBeforeExeucution="false" CommandEnabled="true" v_userVariableName="vRestApiAddress" v_Input="https://app.lusopay.com:8443/web/api/users/{vCyclosId}" />
+      </AdditionalScriptCommands>
+      <AdditionalScriptCommands>
+        <ScriptCommand xsi:type="CommentCommand" CommandID="08927093-e918-4331-a227-c879dbc61f8c" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="33" PauseBeforeExeucution="false" v_Comment="Recolher dados do utilizador" CommandEnabled="true" />
+      </AdditionalScriptCommands>
+      <AdditionalScriptCommands>
+        <ScriptCommand xsi:type="RESTCommand" CommandID="f344fa83-4464-4f49-bd00-bfee3cd84d29" CommandName="RESTCommand" IsCommented="false" SelectionName="Execute REST API" DefaultPause="0" LineNumber="34" PauseBeforeExeucution="false" v_Comment="" CommandEnabled="true" v_BaseURL="https://app.lusopay.com:8443" v_APIEndPoint="/web/api/users/{vCyclosId}/data-for-edit?fields=user.name&amp;fields=user.username&amp;fields=user.email&amp;fields=user.customValues.VolumeNegocios&amp;fields=user.customValues.PerfilRiscoBCFT&amp;fields=user.customValues.ClassificacaoManualPerfilRisco&amp;fields=user.version&amp;fields=user.customValues.nif&amp;fields=user.customValues.PF_VATRATETAX" v_APIMethodType="GET" v_userVariableName="vJson" v_RequestFormat="Json">
+          <v_AdvancedParameters>
+            <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+              <xs:element name="A21vRESTPara21Table012120.032108">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                    <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                    <xs:element name="Content_x0020_Type" type="xs:string" minOccurs="0" />
+                    <xs:element name="Parameter_x0020_Type" type="xs:string" minOccurs="0" />
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="A21vRESTPara21Table012120.032108" msdata:UseCurrentLocale="true">
+                <xs:complexType>
+                  <xs:choice minOccurs="0" maxOccurs="unbounded">
+                    <xs:element ref="A21vRESTPara21Table012120.032108" />
+                  </xs:choice>
+                </xs:complexType>
+              </xs:element>
+            </xs:schema>
+            <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+              <DocumentElement>
+                <A21vRESTPara21Table012120.032108 diffgr:id="A21vRESTPara21Table012120.0321081" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>Authorization</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>Basic UlBBdGFza3Q6MVJQQWVib20hMjAyMg==</Parameter_x0020_Value>
+                  <Parameter_x0020_Type>HttpHeader</Parameter_x0020_Type>
+                </A21vRESTPara21Table012120.032108>
+                <A21vRESTPara21Table012120.032108 diffgr:id="A21vRESTPara21Table012120.0321082" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>accept</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>application/json</Parameter_x0020_Value>
+                  <Parameter_x0020_Type>HttpHeader</Parameter_x0020_Type>
+                </A21vRESTPara21Table012120.032108>
+              </DocumentElement>
+            </diffgr:diffgram>
+          </v_AdvancedParameters>
+          <v_RESTParameters>
+            <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+              <xs:element name="RESTPara21Table012120.032108">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="Parameter_x0020_Type" type="xs:string" minOccurs="0" />
+                    <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                    <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="RESTPara21Table012120.032108" msdata:UseCurrentLocale="true">
+                <xs:complexType>
+                  <xs:choice minOccurs="0" maxOccurs="unbounded">
+                    <xs:element ref="RESTPara21Table012120.032108" />
+                  </xs:choice>
+                </xs:complexType>
+              </xs:element>
+            </xs:schema>
+            <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1" />
+          </v_RESTParameters>
+        </ScriptCommand>
+      </AdditionalScriptCommands>
+      <AdditionalScriptCommands>
+        <ScriptCommand xsi:type="TextExtractorCommand" CommandID="70a214e5-cd5e-4c6f-bcb3-c0d29667bc56" CommandName="TextExtractorCommand" IsCommented="false" SelectionName="Text Extraction" DefaultPause="0" LineNumber="35" PauseBeforeExeucution="false" CommandEnabled="true" v_InputValue="{vJson}" v_TextExtractionType="Extract All Between Text" v_applyToVariableName="vName">
+          <v_TextExtractionTable>
+            <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+              <xs:element name="TexExracorPara8Table021320.010852">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                    <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="TexExracorPara8Table021320.010852" msdata:UseCurrentLocale="true">
+                <xs:complexType>
+                  <xs:choice minOccurs="0" maxOccurs="unbounded">
+                    <xs:element ref="TexExracorPara8Table021320.010852" />
+                  </xs:choice>
+                </xs:complexType>
+              </xs:element>
+            </xs:schema>
+            <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+              <DocumentElement>
+                <TexExracorPara8Table021320.010852 diffgr:id="TexExracorPara8Table021320.0108521" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>Leading Text</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>"name": "</Parameter_x0020_Value>
+                </TexExracorPara8Table021320.010852>
+                <TexExracorPara8Table021320.010852 diffgr:id="TexExracorPara8Table021320.0108522" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>Trailing Text</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>"</Parameter_x0020_Value>
+                </TexExracorPara8Table021320.010852>
+                <TexExracorPara8Table021320.010852 diffgr:id="TexExracorPara8Table021320.0108523" msdata:rowOrder="2" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>Skip Past Occurences</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>0</Parameter_x0020_Value>
+                </TexExracorPara8Table021320.010852>
+              </DocumentElement>
+            </diffgr:diffgram>
+          </v_TextExtractionTable>
+        </ScriptCommand>
+      </AdditionalScriptCommands>
+      <AdditionalScriptCommands>
+        <ScriptCommand xsi:type="TextExtractorCommand" CommandID="df11b634-71ff-4c16-b683-f50b67e250f6" CommandName="TextExtractorCommand" IsCommented="false" SelectionName="Text Extraction" DefaultPause="0" LineNumber="36" PauseBeforeExeucution="false" CommandEnabled="true" v_InputValue="{vJson}" v_TextExtractionType="Extract All Between Text" v_applyToVariableName="vJsonUsername">
+          <v_TextExtractionTable>
+            <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+              <xs:element name="TexExracorPara8Table021320.010852">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                    <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="TexExracorPara8Table021320.010852" msdata:UseCurrentLocale="true">
+                <xs:complexType>
+                  <xs:choice minOccurs="0" maxOccurs="unbounded">
+                    <xs:element ref="TexExracorPara8Table021320.010852" />
+                  </xs:choice>
+                </xs:complexType>
+              </xs:element>
+            </xs:schema>
+            <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+              <DocumentElement>
+                <TexExracorPara8Table021320.010852 diffgr:id="TexExracorPara8Table021320.0108521" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>Leading Text</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>"username": "</Parameter_x0020_Value>
+                </TexExracorPara8Table021320.010852>
+                <TexExracorPara8Table021320.010852 diffgr:id="TexExracorPara8Table021320.0108522" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>Trailing Text</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>"</Parameter_x0020_Value>
+                </TexExracorPara8Table021320.010852>
+                <TexExracorPara8Table021320.010852 diffgr:id="TexExracorPara8Table021320.0108523" msdata:rowOrder="2" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>Skip Past Occurences</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>0</Parameter_x0020_Value>
+                </TexExracorPara8Table021320.010852>
+              </DocumentElement>
+            </diffgr:diffgram>
+          </v_TextExtractionTable>
+        </ScriptCommand>
+      </AdditionalScriptCommands>
+      <AdditionalScriptCommands>
+        <ScriptCommand xsi:type="TextExtractorCommand" CommandID="c694270f-0dc4-4a29-ac92-c30c83fdac49" CommandName="TextExtractorCommand" IsCommented="false" SelectionName="Text Extraction" DefaultPause="0" LineNumber="37" PauseBeforeExeucution="false" CommandEnabled="true" v_InputValue="{vJson}" v_TextExtractionType="Extract All Between Text" v_applyToVariableName="vEmail">
+          <v_TextExtractionTable>
+            <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+              <xs:element name="TexExracorPara8Table021320.010852">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                    <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="TexExracorPara8Table021320.010852" msdata:UseCurrentLocale="true">
+                <xs:complexType>
+                  <xs:choice minOccurs="0" maxOccurs="unbounded">
+                    <xs:element ref="TexExracorPara8Table021320.010852" />
+                  </xs:choice>
+                </xs:complexType>
+              </xs:element>
+            </xs:schema>
+            <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+              <DocumentElement>
+                <TexExracorPara8Table021320.010852 diffgr:id="TexExracorPara8Table021320.0108521" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>Leading Text</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>"email": "</Parameter_x0020_Value>
+                </TexExracorPara8Table021320.010852>
+                <TexExracorPara8Table021320.010852 diffgr:id="TexExracorPara8Table021320.0108522" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>Trailing Text</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>"</Parameter_x0020_Value>
+                </TexExracorPara8Table021320.010852>
+                <TexExracorPara8Table021320.010852 diffgr:id="TexExracorPara8Table021320.0108523" msdata:rowOrder="2" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>Skip Past Occurences</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>0</Parameter_x0020_Value>
+                </TexExracorPara8Table021320.010852>
+              </DocumentElement>
+            </diffgr:diffgram>
+          </v_TextExtractionTable>
+        </ScriptCommand>
+      </AdditionalScriptCommands>
+      <AdditionalScriptCommands>
+        <ScriptCommand xsi:type="TextExtractorCommand" CommandID="bc6e80d6-e248-467f-abde-a8204efca4d4" CommandName="TextExtractorCommand" IsCommented="false" SelectionName="Text Extraction" DefaultPause="0" LineNumber="38" PauseBeforeExeucution="false" CommandEnabled="true" v_InputValue="{vJson}" v_TextExtractionType="Extract All Between Text" v_applyToVariableName="vPerfilRiscoBCFT">
+          <v_TextExtractionTable>
+            <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+              <xs:element name="TexExracorPara8Table021320.010852">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                    <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="TexExracorPara8Table021320.010852" msdata:UseCurrentLocale="true">
+                <xs:complexType>
+                  <xs:choice minOccurs="0" maxOccurs="unbounded">
+                    <xs:element ref="TexExracorPara8Table021320.010852" />
+                  </xs:choice>
+                </xs:complexType>
+              </xs:element>
+            </xs:schema>
+            <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+              <DocumentElement>
+                <TexExracorPara8Table021320.010852 diffgr:id="TexExracorPara8Table021320.0108521" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>Leading Text</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>"PerfilRiscoBCFT": "</Parameter_x0020_Value>
+                </TexExracorPara8Table021320.010852>
+                <TexExracorPara8Table021320.010852 diffgr:id="TexExracorPara8Table021320.0108522" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>Trailing Text</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>"</Parameter_x0020_Value>
+                </TexExracorPara8Table021320.010852>
+                <TexExracorPara8Table021320.010852 diffgr:id="TexExracorPara8Table021320.0108523" msdata:rowOrder="2" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>Skip Past Occurences</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>0</Parameter_x0020_Value>
+                </TexExracorPara8Table021320.010852>
+              </DocumentElement>
+            </diffgr:diffgram>
+          </v_TextExtractionTable>
+        </ScriptCommand>
+      </AdditionalScriptCommands>
+      <AdditionalScriptCommands>
+        <ScriptCommand xsi:type="TextExtractorCommand" CommandID="caacafc3-8a0e-4448-a780-adb5eab2a744" CommandName="TextExtractorCommand" IsCommented="false" SelectionName="Text Extraction" DefaultPause="0" LineNumber="39" PauseBeforeExeucution="false" CommandEnabled="true" v_InputValue="{vJson}" v_TextExtractionType="Extract All Between Text" v_applyToVariableName="vClassiManualPerfilRisco">
+          <v_TextExtractionTable>
+            <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+              <xs:element name="TexExracorPara32Table062921.033225">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                    <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="TexExracorPara32Table062921.033225" msdata:UseCurrentLocale="true">
+                <xs:complexType>
+                  <xs:choice minOccurs="0" maxOccurs="unbounded">
+                    <xs:element ref="TexExracorPara32Table062921.033225" />
+                  </xs:choice>
+                </xs:complexType>
+              </xs:element>
+            </xs:schema>
+            <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+              <DocumentElement>
+                <TexExracorPara32Table062921.033225 diffgr:id="TexExracorPara32Table062921.0332251" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>Leading Text</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>"ClassificacaoManualPerfilRisco": "</Parameter_x0020_Value>
+                </TexExracorPara32Table062921.033225>
+                <TexExracorPara32Table062921.033225 diffgr:id="TexExracorPara32Table062921.0332252" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>Trailing Text</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>"</Parameter_x0020_Value>
+                </TexExracorPara32Table062921.033225>
+                <TexExracorPara32Table062921.033225 diffgr:id="TexExracorPara32Table062921.0332253" msdata:rowOrder="2" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>Skip Past Occurences</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>0</Parameter_x0020_Value>
+                </TexExracorPara32Table062921.033225>
+              </DocumentElement>
+            </diffgr:diffgram>
+          </v_TextExtractionTable>
+        </ScriptCommand>
+      </AdditionalScriptCommands>
+      <AdditionalScriptCommands>
+        <ScriptCommand xsi:type="ErrorHandlingCommand" CommandID="2d5faf5e-4cf8-4310-a0bb-32d02bd09c84" CommandName="ErrorHandlingCommand" IsCommented="false" SelectionName="Error Handling" DefaultPause="0" LineNumber="40" PauseBeforeExeucution="false" CommandEnabled="true" v_ErrorHandlingAction="Continue Processing" />
+      </AdditionalScriptCommands>
+      <AdditionalScriptCommands>
+        <ScriptCommand xsi:type="TextExtractorCommand" CommandID="09588e88-389c-456a-821a-13876ba67eb3" CommandName="TextExtractorCommand" IsCommented="false" SelectionName="Text Extraction" DefaultPause="0" LineNumber="41" PauseBeforeExeucution="false" CommandEnabled="true" v_InputValue="{vJson}" v_TextExtractionType="Extract All Between Text" v_applyToVariableName="vPais">
+          <v_TextExtractionTable>
+            <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+              <xs:element name="TexExracorPara8Table021320.010852">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                    <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="TexExracorPara8Table021320.010852" msdata:UseCurrentLocale="true">
+                <xs:complexType>
+                  <xs:choice minOccurs="0" maxOccurs="unbounded">
+                    <xs:element ref="TexExracorPara8Table021320.010852" />
+                  </xs:choice>
+                </xs:complexType>
+              </xs:element>
+            </xs:schema>
+            <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+              <DocumentElement>
+                <TexExracorPara8Table021320.010852 diffgr:id="TexExracorPara8Table021320.0108521" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>Leading Text</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>"PF_VATRATETAX": "</Parameter_x0020_Value>
+                </TexExracorPara8Table021320.010852>
+                <TexExracorPara8Table021320.010852 diffgr:id="TexExracorPara8Table021320.0108522" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>Trailing Text</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>-</Parameter_x0020_Value>
+                </TexExracorPara8Table021320.010852>
+                <TexExracorPara8Table021320.010852 diffgr:id="TexExracorPara8Table021320.0108523" msdata:rowOrder="2" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>Skip Past Occurences</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>0</Parameter_x0020_Value>
+                </TexExracorPara8Table021320.010852>
+              </DocumentElement>
+            </diffgr:diffgram>
+          </v_TextExtractionTable>
+        </ScriptCommand>
+      </AdditionalScriptCommands>
+      <AdditionalScriptCommands>
+        <ScriptCommand xsi:type="ErrorHandlingCommand" CommandID="a02ff4bc-cc57-4a52-9406-fe1ad3cd4db7" CommandName="ErrorHandlingCommand" IsCommented="false" SelectionName="Error Handling" DefaultPause="0" LineNumber="42" PauseBeforeExeucution="false" CommandEnabled="true" v_ErrorHandlingAction="Stop Processing" />
+      </AdditionalScriptCommands>
+      <AdditionalScriptCommands>
+        <ScriptCommand xsi:type="BeginIfCommand" CommandID="1b884c88-5da6-4ef3-974f-2767563f8daa" CommandName="BeginIfCommand" IsCommented="false" SelectionName="Begin If" DefaultPause="0" LineNumber="43" PauseBeforeExeucution="false" v_Comment="Se vPais eh vazio" CommandEnabled="true" v_IfActionType="Variable Has Value">
+          <v_IfActionParameterTable>
+            <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+              <xs:element name="I9AcionPara0Table110520.060018">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                    <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="I9AcionPara0Table110520.060018" msdata:UseCurrentLocale="true">
+                <xs:complexType>
+                  <xs:choice minOccurs="0" maxOccurs="unbounded">
+                    <xs:element ref="I9AcionPara0Table110520.060018" />
+                  </xs:choice>
+                </xs:complexType>
+              </xs:element>
+            </xs:schema>
+            <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+              <DocumentElement>
+                <I9AcionPara0Table110520.060018 diffgr:id="I9AcionPara0Table110520.0600181" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                  <Parameter_x0020_Name>Variable Name</Parameter_x0020_Name>
+                  <Parameter_x0020_Value>{vPais}</Parameter_x0020_Value>
+                </I9AcionPara0Table110520.060018>
+              </DocumentElement>
+            </diffgr:diffgram>
+          </v_IfActionParameterTable>
+        </ScriptCommand>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="CommentCommand" CommandID="e2242b1b-dbad-4df0-a832-99058e7a1c00" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="44" PauseBeforeExeucution="false" v_Comment="Items in this section will run if the statement is true" CommandEnabled="true" />
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="TextExtractorCommand" CommandID="a94aedb8-284e-44dc-8c59-9aaf1d507feb" CommandName="TextExtractorCommand" IsCommented="false" SelectionName="Text Extraction" DefaultPause="0" LineNumber="45" PauseBeforeExeucution="false" CommandEnabled="true" v_InputValue="{vJson}" v_TextExtractionType="Extract All Between Text" v_applyToVariableName="vVersion">
+            <v_TextExtractionTable>
+              <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+                <xs:element name="TexExracorPara8Table021320.010852">
+                  <xs:complexType>
+                    <xs:sequence>
+                      <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                      <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                    </xs:sequence>
+                  </xs:complexType>
+                </xs:element>
+                <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="TexExracorPara8Table021320.010852" msdata:UseCurrentLocale="true">
+                  <xs:complexType>
+                    <xs:choice minOccurs="0" maxOccurs="unbounded">
+                      <xs:element ref="TexExracorPara8Table021320.010852" />
+                    </xs:choice>
+                  </xs:complexType>
+                </xs:element>
+              </xs:schema>
+              <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+                <DocumentElement>
+                  <TexExracorPara8Table021320.010852 diffgr:id="TexExracorPara8Table021320.0108521" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Leading Text</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>"version": </Parameter_x0020_Value>
+                  </TexExracorPara8Table021320.010852>
+                  <TexExracorPara8Table021320.010852 diffgr:id="TexExracorPara8Table021320.0108522" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Trailing Text</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>  }</Parameter_x0020_Value>
+                  </TexExracorPara8Table021320.010852>
+                  <TexExracorPara8Table021320.010852 diffgr:id="TexExracorPara8Table021320.0108523" msdata:rowOrder="2" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Skip Past Occurences</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>0</Parameter_x0020_Value>
+                  </TexExracorPara8Table021320.010852>
+                </DocumentElement>
+              </diffgr:diffgram>
+            </v_TextExtractionTable>
+          </ScriptCommand>
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="RegExExtractorCommand" CommandID="e68f3229-d8af-4225-bebf-b4c4debc9691" CommandName="RegExExtractorCommand" IsCommented="false" SelectionName="RegEx Extraction" DefaultPause="0" LineNumber="46" PauseBeforeExeucution="false" v_Comment="" CommandEnabled="true" v_InputValue="{vVersion}" v_RegExExtractor="\S+" v_MatchGroupIndex="" v_applyToVariableName="vVersion" />
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="CommentCommand" CommandID="bbd25f83-d36e-4c28-8214-2f1834cb9132" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="47" PauseBeforeExeucution="false" v_Comment="Altera perfil de risco Médio para Medio (internalName)" CommandEnabled="true" />
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="BeginIfCommand" CommandID="2dbcc5b9-d6bf-44af-a6c0-094c053bb60a" CommandName="BeginIfCommand" IsCommented="false" SelectionName="Begin If" DefaultPause="0" LineNumber="48" PauseBeforeExeucution="false" CommandEnabled="true" v_IfActionType="Value">
+            <v_IfActionParameterTable>
+              <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+                <xs:element name="I9AcionPara44Table021320.034425">
+                  <xs:complexType>
+                    <xs:sequence>
+                      <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                      <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                    </xs:sequence>
+                  </xs:complexType>
+                </xs:element>
+                <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="I9AcionPara44Table021320.034425" msdata:UseCurrentLocale="true">
+                  <xs:complexType>
+                    <xs:choice minOccurs="0" maxOccurs="unbounded">
+                      <xs:element ref="I9AcionPara44Table021320.034425" />
+                    </xs:choice>
+                  </xs:complexType>
+                </xs:element>
+              </xs:schema>
+              <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+                <DocumentElement>
+                  <I9AcionPara44Table021320.034425 diffgr:id="I9AcionPara44Table021320.0344251" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Value1</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>{vPerfilRiscoBCFT}</Parameter_x0020_Value>
+                  </I9AcionPara44Table021320.034425>
+                  <I9AcionPara44Table021320.034425 diffgr:id="I9AcionPara44Table021320.0344252" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Operand</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>is equal to</Parameter_x0020_Value>
+                  </I9AcionPara44Table021320.034425>
+                  <I9AcionPara44Table021320.034425 diffgr:id="I9AcionPara44Table021320.0344253" msdata:rowOrder="2" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Value2</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>Médio</Parameter_x0020_Value>
+                  </I9AcionPara44Table021320.034425>
+                </DocumentElement>
+              </diffgr:diffgram>
+            </v_IfActionParameterTable>
+          </ScriptCommand>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="CommentCommand" CommandID="8d7ae42a-db25-496c-8b3a-cf9af25fdc8c" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="49" PauseBeforeExeucution="false" v_Comment="Items in this section will run if the statement is true" CommandEnabled="true" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="VariableCommand" CommandID="b032dde5-a54b-429d-a2e5-1370ef174143" CommandName="VariableCommand" IsCommented="false" SelectionName="Set Variable" DefaultPause="0" LineNumber="50" PauseBeforeExeucution="false" CommandEnabled="true" v_userVariableName="vPerfilRiscoBCFT" v_Input="Medio" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="EndIfCommand" CommandID="960196cb-d9a7-492d-aecf-bd788b499192" CommandName="EndIfCommand" IsCommented="false" SelectionName="End If" DefaultPause="0" LineNumber="51" PauseBeforeExeucution="false" CommandEnabled="true" />
+          </AdditionalScriptCommands>
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="CommentCommand" CommandID="3caff3c3-75bb-4970-93c7-33d239291b08" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="52" PauseBeforeExeucution="false" v_Comment="Recolhe valores transacionados nos últimos 3 meses" CommandEnabled="true" />
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="RESTCommand" CommandID="a23f0708-11d4-417c-86eb-ff7a9c983c5a" CommandName="RESTCommand" IsCommented="false" SelectionName="Execute REST API" DefaultPause="0" LineNumber="53" PauseBeforeExeucution="false" v_Comment="" CommandEnabled="true" v_BaseURL="https://app.lusopay.com:8443" v_APIEndPoint="/web/api/{vCyclosId}/accounts/EUR/balances-history?fields=account.status.incoming.sum&amp;datePeriod={v91DiasAtras}&amp;datePeriod={vHoje}&amp;intervalUnit=months" v_APIMethodType="GET" v_userVariableName="vJsonValorRecebido3Meses" v_RequestFormat="Json">
+            <v_AdvancedParameters>
+              <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+                <xs:element name="A21vRESTPara21Table012120.032108">
+                  <xs:complexType>
+                    <xs:sequence>
+                      <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                      <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                      <xs:element name="Content_x0020_Type" type="xs:string" minOccurs="0" />
+                      <xs:element name="Parameter_x0020_Type" type="xs:string" minOccurs="0" />
+                    </xs:sequence>
+                  </xs:complexType>
+                </xs:element>
+                <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="A21vRESTPara21Table012120.032108" msdata:UseCurrentLocale="true">
+                  <xs:complexType>
+                    <xs:choice minOccurs="0" maxOccurs="unbounded">
+                      <xs:element ref="A21vRESTPara21Table012120.032108" />
+                    </xs:choice>
+                  </xs:complexType>
+                </xs:element>
+              </xs:schema>
+              <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+                <DocumentElement>
+                  <A21vRESTPara21Table012120.032108 diffgr:id="A21vRESTPara21Table012120.0321081" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Authorization</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>Basic UlBBdGFza3Q6MVJQQWVib20hMjAyMg==</Parameter_x0020_Value>
+                    <Parameter_x0020_Type>HttpHeader</Parameter_x0020_Type>
+                  </A21vRESTPara21Table012120.032108>
+                  <A21vRESTPara21Table012120.032108 diffgr:id="A21vRESTPara21Table012120.0321082" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>accept</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>application/json</Parameter_x0020_Value>
+                    <Parameter_x0020_Type>HttpHeader</Parameter_x0020_Type>
+                  </A21vRESTPara21Table012120.032108>
+                </DocumentElement>
+              </diffgr:diffgram>
+            </v_AdvancedParameters>
+            <v_RESTParameters>
+              <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+                <xs:element name="RESTPara21Table012120.032108">
+                  <xs:complexType>
+                    <xs:sequence>
+                      <xs:element name="Parameter_x0020_Type" type="xs:string" minOccurs="0" />
+                      <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                      <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                    </xs:sequence>
+                  </xs:complexType>
+                </xs:element>
+                <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="RESTPara21Table012120.032108" msdata:UseCurrentLocale="true">
+                  <xs:complexType>
+                    <xs:choice minOccurs="0" maxOccurs="unbounded">
+                      <xs:element ref="RESTPara21Table012120.032108" />
+                    </xs:choice>
+                  </xs:complexType>
+                </xs:element>
+              </xs:schema>
+              <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1" />
+            </v_RESTParameters>
+          </ScriptCommand>
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="TextExtractorCommand" CommandID="28c9ce90-81f6-47d0-b156-81e0568744bf" CommandName="TextExtractorCommand" IsCommented="false" SelectionName="Text Extraction" DefaultPause="0" LineNumber="54" PauseBeforeExeucution="false" v_Comment="Extrai valor recebido nos últimos 3 meses" CommandEnabled="true" v_InputValue="{vJsonValorRecebido3Meses}" v_TextExtractionType="Extract All Between Text" v_applyToVariableName="vTotalRecebido">
+            <v_TextExtractionTable>
+              <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+                <xs:element name="TexExracorPara54Table022220.105418">
+                  <xs:complexType>
+                    <xs:sequence>
+                      <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                      <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                    </xs:sequence>
+                  </xs:complexType>
+                </xs:element>
+                <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="TexExracorPara54Table022220.105418" msdata:UseCurrentLocale="true">
+                  <xs:complexType>
+                    <xs:choice minOccurs="0" maxOccurs="unbounded">
+                      <xs:element ref="TexExracorPara54Table022220.105418" />
+                    </xs:choice>
+                  </xs:complexType>
+                </xs:element>
+              </xs:schema>
+              <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+                <DocumentElement>
+                  <TexExracorPara54Table022220.105418 diffgr:id="TexExracorPara54Table022220.1054181" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Leading Text</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>"sum": "</Parameter_x0020_Value>
+                  </TexExracorPara54Table022220.105418>
+                  <TexExracorPara54Table022220.105418 diffgr:id="TexExracorPara54Table022220.1054182" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Trailing Text</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>"</Parameter_x0020_Value>
+                  </TexExracorPara54Table022220.105418>
+                  <TexExracorPara54Table022220.105418 diffgr:id="TexExracorPara54Table022220.1054183" msdata:rowOrder="2" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Skip Past Occurences</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>0</Parameter_x0020_Value>
+                  </TexExracorPara54Table022220.105418>
+                </DocumentElement>
+              </diffgr:diffgram>
+            </v_TextExtractionTable>
+          </ScriptCommand>
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="MathCalculationCommand" CommandID="d5f0164a-7eba-4a32-80b0-1c1f0a8b122b" CommandName="MathCalculationCommand" IsCommented="false" SelectionName="Math Calculation" DefaultPause="0" LineNumber="55" PauseBeforeExeucution="false" v_Comment="Calcula média mensal" CommandEnabled="true" v_InputValue="{vTotalRecebido}/3" v_ThousandSeperator="," v_DecimalSeperator="." v_applyToVariableName="{vMediaMensal}" />
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="CommentCommand" CommandID="d4f6561b-109e-41b1-8031-a51e6d2867c1" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="56" PauseBeforeExeucution="false" v_Comment="Definir perfil de risco em função do valor recebido" CommandEnabled="true" />
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="BeginIfCommand" CommandID="177b27c6-de22-4a77-804b-163b67a50491" CommandName="BeginIfCommand" IsCommented="false" SelectionName="Begin If" DefaultPause="0" LineNumber="57" PauseBeforeExeucution="false" v_Comment="Risco alto" CommandEnabled="true" v_IfActionType="Value">
+            <v_IfActionParameterTable>
+              <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+                <xs:element name="I0AcionPara40Table122419.034042">
+                  <xs:complexType>
+                    <xs:sequence>
+                      <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                      <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                    </xs:sequence>
+                  </xs:complexType>
+                </xs:element>
+                <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="I0AcionPara40Table122419.034042" msdata:UseCurrentLocale="true">
+                  <xs:complexType>
+                    <xs:choice minOccurs="0" maxOccurs="unbounded">
+                      <xs:element ref="I0AcionPara40Table122419.034042" />
+                    </xs:choice>
+                  </xs:complexType>
+                </xs:element>
+              </xs:schema>
+              <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+                <DocumentElement>
+                  <I0AcionPara40Table122419.034042 diffgr:id="I0AcionPara40Table122419.0340421" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Value1</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>vMediaMensal</Parameter_x0020_Value>
+                  </I0AcionPara40Table122419.034042>
+                  <I0AcionPara40Table122419.034042 diffgr:id="I0AcionPara40Table122419.0340422" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Operand</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>is greater than</Parameter_x0020_Value>
+                  </I0AcionPara40Table122419.034042>
+                  <I0AcionPara40Table122419.034042 diffgr:id="I0AcionPara40Table122419.0340423" msdata:rowOrder="2" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Value2</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>100000</Parameter_x0020_Value>
+                  </I0AcionPara40Table122419.034042>
+                </DocumentElement>
+              </diffgr:diffgram>
+            </v_IfActionParameterTable>
+          </ScriptCommand>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="CommentCommand" CommandID="ff052fbd-c134-4649-a005-07a0ffb107b0" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="58" PauseBeforeExeucution="false" v_Comment="Items in this section will run if the statement is true" CommandEnabled="true" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="VariableCommand" CommandID="cbd98aba-dfc1-4b8e-aaee-48226be570cd" CommandName="VariableCommand" IsCommented="false" SelectionName="Set Variable" DefaultPause="0" LineNumber="59" PauseBeforeExeucution="false" CommandEnabled="true" v_userVariableName="vPerfilRiscoBcftNovo" v_Input="Alto" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="VariableCommand" CommandID="f833dee1-4f3c-4d3e-b61d-f139f140a832" CommandName="VariableCommand" IsCommented="false" SelectionName="Set Variable" DefaultPause="0" LineNumber="60" PauseBeforeExeucution="false" v_Comment="Insere justificação de alteração de risco BCFT" CommandEnabled="true" v_userVariableName="vJustificacaoAlteracaoRisco" v_Input="Valor transacionado acima de € 100.000,00;" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="ElseCommand" CommandID="04e13eac-8032-4990-90dc-ea4e5c73691d" CommandName="ElseCommand" IsCommented="false" SelectionName="Else" DefaultPause="0" LineNumber="61" PauseBeforeExeucution="false" v_Comment="Senão" CommandEnabled="true" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="BeginIfCommand" CommandID="7e97e182-5ca3-4346-8f5a-185b0e8ed3a7" CommandName="BeginIfCommand" IsCommented="false" SelectionName="Begin If" DefaultPause="0" LineNumber="62" PauseBeforeExeucution="false" v_Comment="risco médio" CommandEnabled="true" v_IfActionType="Value">
+              <v_IfActionParameterTable>
+                <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+                  <xs:element name="I4AcionPara44Table122419.034436">
+                    <xs:complexType>
+                      <xs:sequence>
+                        <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                        <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                      </xs:sequence>
+                    </xs:complexType>
+                  </xs:element>
+                  <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="I4AcionPara44Table122419.034436" msdata:UseCurrentLocale="true">
+                    <xs:complexType>
+                      <xs:choice minOccurs="0" maxOccurs="unbounded">
+                        <xs:element ref="I4AcionPara44Table122419.034436" />
+                      </xs:choice>
+                    </xs:complexType>
+                  </xs:element>
+                </xs:schema>
+                <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+                  <DocumentElement>
+                    <I4AcionPara44Table122419.034436 diffgr:id="I4AcionPara44Table122419.0344361" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                      <Parameter_x0020_Name>Value1</Parameter_x0020_Name>
+                      <Parameter_x0020_Value>{vMediaMensal}</Parameter_x0020_Value>
+                    </I4AcionPara44Table122419.034436>
+                    <I4AcionPara44Table122419.034436 diffgr:id="I4AcionPara44Table122419.0344362" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                      <Parameter_x0020_Name>Operand</Parameter_x0020_Name>
+                      <Parameter_x0020_Value>is greater than</Parameter_x0020_Value>
+                    </I4AcionPara44Table122419.034436>
+                    <I4AcionPara44Table122419.034436 diffgr:id="I4AcionPara44Table122419.0344363" msdata:rowOrder="2" diffgr:hasChanges="inserted">
+                      <Parameter_x0020_Name>Value2</Parameter_x0020_Name>
+                      <Parameter_x0020_Value>10000</Parameter_x0020_Value>
+                    </I4AcionPara44Table122419.034436>
+                  </DocumentElement>
+                </diffgr:diffgram>
+              </v_IfActionParameterTable>
+            </ScriptCommand>
+            <AdditionalScriptCommands>
+              <ScriptCommand xsi:type="CommentCommand" CommandID="912e5923-6669-4880-8e7a-9b0fc7735853" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="63" PauseBeforeExeucution="false" v_Comment="Items in this section will run if the statement is true" CommandEnabled="true" />
+            </AdditionalScriptCommands>
+            <AdditionalScriptCommands>
+              <ScriptCommand xsi:type="VariableCommand" CommandID="2064e08c-04f8-4398-b214-dd2b7c483dfd" CommandName="VariableCommand" IsCommented="false" SelectionName="Set Variable" DefaultPause="0" LineNumber="64" PauseBeforeExeucution="false" CommandEnabled="true" v_userVariableName="vPerfilRiscoBcftNovo" v_Input="Medio" />
+            </AdditionalScriptCommands>
+            <AdditionalScriptCommands>
+              <ScriptCommand xsi:type="VariableCommand" CommandID="921238e6-6c8a-4e18-a595-c43e2e15d58c" CommandName="VariableCommand" IsCommented="false" SelectionName="Set Variable" DefaultPause="0" LineNumber="65" PauseBeforeExeucution="false" v_Comment="Insere justificação de alteração de risco BCFT" CommandEnabled="true" v_userVariableName="vJustificacaoAlteracaoRisco" v_Input="Valor transacionado acima de € 10.000,00 e inferior ou igual a € 100.000,00;" />
+            </AdditionalScriptCommands>
+            <AdditionalScriptCommands>
+              <ScriptCommand xsi:type="ElseCommand" CommandID="3b777d3c-45f3-42c7-b23b-c61e2eee276a" CommandName="ElseCommand" IsCommented="false" SelectionName="Else" DefaultPause="0" LineNumber="66" PauseBeforeExeucution="false" v_Comment="risco baixo" CommandEnabled="true" />
+            </AdditionalScriptCommands>
+            <AdditionalScriptCommands>
+              <ScriptCommand xsi:type="BeginIfCommand" CommandID="2ad8f80a-851f-46da-b506-7d95f9ef4dad" CommandName="BeginIfCommand" IsCommented="false" SelectionName="Begin If" DefaultPause="0" LineNumber="67" PauseBeforeExeucution="false" v_Comment="Vê se é inferior a € 10.000,01" CommandEnabled="true" v_IfActionType="Value">
+                <v_IfActionParameterTable>
+                  <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+                    <xs:element name="I9AcionPara36Table122419.033632">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                          <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="I9AcionPara36Table122419.033632" msdata:UseCurrentLocale="true">
+                      <xs:complexType>
+                        <xs:choice minOccurs="0" maxOccurs="unbounded">
+                          <xs:element ref="I9AcionPara36Table122419.033632" />
+                        </xs:choice>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:schema>
+                  <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+                    <DocumentElement>
+                      <I9AcionPara36Table122419.033632 diffgr:id="I9AcionPara36Table122419.0336321" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                        <Parameter_x0020_Name>Value1</Parameter_x0020_Name>
+                        <Parameter_x0020_Value>{vMediaMensal}</Parameter_x0020_Value>
+                      </I9AcionPara36Table122419.033632>
+                      <I9AcionPara36Table122419.033632 diffgr:id="I9AcionPara36Table122419.0336322" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                        <Parameter_x0020_Name>Operand</Parameter_x0020_Name>
+                        <Parameter_x0020_Value>is less than or equal to</Parameter_x0020_Value>
+                      </I9AcionPara36Table122419.033632>
+                      <I9AcionPara36Table122419.033632 diffgr:id="I9AcionPara36Table122419.0336323" msdata:rowOrder="2" diffgr:hasChanges="inserted">
+                        <Parameter_x0020_Name>Value2</Parameter_x0020_Name>
+                        <Parameter_x0020_Value>10000</Parameter_x0020_Value>
+                      </I9AcionPara36Table122419.033632>
+                    </DocumentElement>
+                  </diffgr:diffgram>
+                </v_IfActionParameterTable>
+              </ScriptCommand>
+              <AdditionalScriptCommands>
+                <ScriptCommand xsi:type="CommentCommand" CommandID="32f293eb-0702-4256-8d26-40c76c8b0737" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="68" PauseBeforeExeucution="false" v_Comment="Items in this section will run if the statement is true" CommandEnabled="true" />
+              </AdditionalScriptCommands>
+              <AdditionalScriptCommands>
+                <ScriptCommand xsi:type="VariableCommand" CommandID="7eb1ef74-4449-4428-8f49-cf94d08f23af" CommandName="VariableCommand" IsCommented="false" SelectionName="Set Variable" DefaultPause="0" LineNumber="69" PauseBeforeExeucution="false" CommandEnabled="true" v_userVariableName="vPerfilRiscoBcftNovo" v_Input="Baixo" />
+              </AdditionalScriptCommands>
+              <AdditionalScriptCommands>
+                <ScriptCommand xsi:type="VariableCommand" CommandID="30537507-4875-471f-911b-4ff91dba3592" CommandName="VariableCommand" IsCommented="false" SelectionName="Set Variable" DefaultPause="0" LineNumber="70" PauseBeforeExeucution="false" v_Comment="Insere justificação de alteração de risco BCFT" CommandEnabled="true" v_userVariableName="vJustificacaoAlteracaoRisco" v_Input="Valor transacionado inferior a € 10.000,00;" />
+              </AdditionalScriptCommands>
+              <AdditionalScriptCommands>
+                <ScriptCommand xsi:type="EndIfCommand" CommandID="bed68324-6d0b-42e5-8072-868d762914f7" CommandName="EndIfCommand" IsCommented="false" SelectionName="End If" DefaultPause="0" LineNumber="71" PauseBeforeExeucution="false" CommandEnabled="true" />
+              </AdditionalScriptCommands>
+            </AdditionalScriptCommands>
+            <AdditionalScriptCommands>
+              <ScriptCommand xsi:type="EndIfCommand" CommandID="531f9548-41cd-403d-ab57-513ae7e6e81b" CommandName="EndIfCommand" IsCommented="false" SelectionName="End If" DefaultPause="0" LineNumber="72" PauseBeforeExeucution="false" CommandEnabled="true" />
+            </AdditionalScriptCommands>
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="EndIfCommand" CommandID="f6a9ba09-a8b1-49ba-b4b9-1b0d88613c0c" CommandName="EndIfCommand" IsCommented="false" SelectionName="End If" DefaultPause="0" LineNumber="73" PauseBeforeExeucution="false" CommandEnabled="true" />
+          </AdditionalScriptCommands>
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="CommentCommand" CommandID="92b4b492-7c7a-49de-88fd-5e53e5cf6b87" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="74" PauseBeforeExeucution="false" v_Comment="Se comunicado à UIF há menos de 1 ano = Alto" CommandEnabled="true" />
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="RESTCommand" CommandID="06a90d33-5eec-40e0-9506-c455899024be" CommandName="RESTCommand" IsCommented="false" SelectionName="Execute REST API" DefaultPause="0" LineNumber="75" PauseBeforeExeucution="false" v_Comment="" CommandEnabled="true" v_BaseURL="https://app.lusopay.com:8443" v_APIEndPoint="/web/api/{vCyclosId}/records/ComunicacoesUIF?fields=creationDate" v_APIMethodType="GET" v_userVariableName="vCreationDateUif" v_RequestFormat="Json">
+            <v_AdvancedParameters>
+              <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+                <xs:element name="A21vRESTPara21Table012120.032108">
+                  <xs:complexType>
+                    <xs:sequence>
+                      <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                      <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                      <xs:element name="Content_x0020_Type" type="xs:string" minOccurs="0" />
+                      <xs:element name="Parameter_x0020_Type" type="xs:string" minOccurs="0" />
+                    </xs:sequence>
+                  </xs:complexType>
+                </xs:element>
+                <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="A21vRESTPara21Table012120.032108" msdata:UseCurrentLocale="true">
+                  <xs:complexType>
+                    <xs:choice minOccurs="0" maxOccurs="unbounded">
+                      <xs:element ref="A21vRESTPara21Table012120.032108" />
+                    </xs:choice>
+                  </xs:complexType>
+                </xs:element>
+              </xs:schema>
+              <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+                <DocumentElement>
+                  <A21vRESTPara21Table012120.032108 diffgr:id="A21vRESTPara21Table012120.0321081" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Authorization</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>Basic UlBBdGFza3Q6MVJQQWVib20hMjAyMg==</Parameter_x0020_Value>
+                    <Parameter_x0020_Type>HttpHeader</Parameter_x0020_Type>
+                  </A21vRESTPara21Table012120.032108>
+                  <A21vRESTPara21Table012120.032108 diffgr:id="A21vRESTPara21Table012120.0321082" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>accept</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>application/json</Parameter_x0020_Value>
+                    <Parameter_x0020_Type>HttpHeader</Parameter_x0020_Type>
+                  </A21vRESTPara21Table012120.032108>
+                </DocumentElement>
+              </diffgr:diffgram>
+            </v_AdvancedParameters>
+            <v_RESTParameters>
+              <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+                <xs:element name="RESTPara21Table012120.032108">
+                  <xs:complexType>
+                    <xs:sequence>
+                      <xs:element name="Parameter_x0020_Type" type="xs:string" minOccurs="0" />
+                      <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                      <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                    </xs:sequence>
+                  </xs:complexType>
+                </xs:element>
+                <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="RESTPara21Table012120.032108" msdata:UseCurrentLocale="true">
+                  <xs:complexType>
+                    <xs:choice minOccurs="0" maxOccurs="unbounded">
+                      <xs:element ref="RESTPara21Table012120.032108" />
+                    </xs:choice>
+                  </xs:complexType>
+                </xs:element>
+              </xs:schema>
+              <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1" />
+            </v_RESTParameters>
+          </ScriptCommand>
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="BeginIfCommand" CommandID="9690be72-922e-49a6-9b08-16aa13fdab0d" CommandName="BeginIfCommand" IsCommented="false" SelectionName="Begin If" DefaultPause="0" LineNumber="76" PauseBeforeExeucution="false" CommandEnabled="true" v_IfActionType="Value">
+            <v_IfActionParameterTable>
+              <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+                <xs:element name="I3AcionPara23Table051420.102336">
+                  <xs:complexType>
+                    <xs:sequence>
+                      <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                      <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                    </xs:sequence>
+                  </xs:complexType>
+                </xs:element>
+                <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="I3AcionPara23Table051420.102336" msdata:UseCurrentLocale="true">
+                  <xs:complexType>
+                    <xs:choice minOccurs="0" maxOccurs="unbounded">
+                      <xs:element ref="I3AcionPara23Table051420.102336" />
+                    </xs:choice>
+                  </xs:complexType>
+                </xs:element>
+              </xs:schema>
+              <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+                <DocumentElement>
+                  <I3AcionPara23Table051420.102336 diffgr:id="I3AcionPara23Table051420.1023361" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Value1</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>{vCreationDateUif}</Parameter_x0020_Value>
+                  </I3AcionPara23Table051420.102336>
+                  <I3AcionPara23Table051420.102336 diffgr:id="I3AcionPara23Table051420.1023362" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Operand</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>is not equal to</Parameter_x0020_Value>
+                  </I3AcionPara23Table051420.102336>
+                  <I3AcionPara23Table051420.102336 diffgr:id="I3AcionPara23Table051420.1023363" msdata:rowOrder="2" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Value2</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>[]</Parameter_x0020_Value>
+                  </I3AcionPara23Table051420.102336>
+                </DocumentElement>
+              </diffgr:diffgram>
+            </v_IfActionParameterTable>
+          </ScriptCommand>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="CommentCommand" CommandID="6018c68d-5ad0-4f7e-9ce3-931e60e2cea2" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="77" PauseBeforeExeucution="false" v_Comment="Items in this section will run if the statement is true" CommandEnabled="true" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="TextExtractorCommand" CommandID="5c86b7e8-4dce-4e24-ab70-af804e4b475f" CommandName="TextExtractorCommand" IsCommented="false" SelectionName="Text Extraction" DefaultPause="0" LineNumber="78" PauseBeforeExeucution="false" CommandEnabled="true" v_InputValue="{vCreationDateUif}" v_TextExtractionType="Extract All Between Text" v_applyToVariableName="vCreationDateUif">
+              <v_TextExtractionTable>
+                <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+                  <xs:element name="TexExracorPara33Table022220.113312">
+                    <xs:complexType>
+                      <xs:sequence>
+                        <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                        <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                      </xs:sequence>
+                    </xs:complexType>
+                  </xs:element>
+                  <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="TexExracorPara33Table022220.113312" msdata:UseCurrentLocale="true">
+                    <xs:complexType>
+                      <xs:choice minOccurs="0" maxOccurs="unbounded">
+                        <xs:element ref="TexExracorPara33Table022220.113312" />
+                      </xs:choice>
+                    </xs:complexType>
+                  </xs:element>
+                </xs:schema>
+                <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+                  <DocumentElement>
+                    <TexExracorPara33Table022220.113312 diffgr:id="TexExracorPara33Table022220.1133121" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                      <Parameter_x0020_Name>Leading Text</Parameter_x0020_Name>
+                      <Parameter_x0020_Value>"creationDate": "</Parameter_x0020_Value>
+                    </TexExracorPara33Table022220.113312>
+                    <TexExracorPara33Table022220.113312 diffgr:id="TexExracorPara33Table022220.1133122" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                      <Parameter_x0020_Name>Trailing Text</Parameter_x0020_Name>
+                      <Parameter_x0020_Value>T</Parameter_x0020_Value>
+                    </TexExracorPara33Table022220.113312>
+                    <TexExracorPara33Table022220.113312 diffgr:id="TexExracorPara33Table022220.1133123" msdata:rowOrder="2" diffgr:hasChanges="inserted">
+                      <Parameter_x0020_Name>Skip Past Occurences</Parameter_x0020_Name>
+                      <Parameter_x0020_Value>0</Parameter_x0020_Value>
+                    </TexExracorPara33Table022220.113312>
+                  </DocumentElement>
+                </diffgr:diffgram>
+              </v_TextExtractionTable>
+            </ScriptCommand>
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="FormatDataCommand" CommandID="bc67886f-10ff-4d5f-b516-d3b1676ae0eb" CommandName="FormatDataCommand" IsCommented="false" SelectionName="Format Data" DefaultPause="0" LineNumber="79" PauseBeforeExeucution="false" CommandEnabled="true" v_InputValue="{vCreationDateUif}" v_FormatType="Date" v_ToStringFormat="yyyyMMdd" v_applyToVariableName="vCreationDateUif" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="DateCalculationCommand" CommandID="7a0fb62d-11dc-409d-9176-10df24c4022e" CommandName="DateCalculationCommand" IsCommented="false" SelectionName="Date Calculation" DefaultPause="0" LineNumber="80" PauseBeforeExeucution="false" CommandEnabled="true" v_InputValue="{DateTime.Now}" v_CalculationMethod="Subtract Years" v_Increment="1" v_ToStringFormat="yyyyMMdd" v_applyToVariableName="vHojeMenos1ano" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="BeginIfCommand" CommandID="520a2ff0-eb51-4167-8ac7-369e690b372b" CommandName="BeginIfCommand" IsCommented="false" SelectionName="Begin If" DefaultPause="0" LineNumber="81" PauseBeforeExeucution="false" CommandEnabled="true" v_IfActionType="Value">
+              <v_IfActionParameterTable>
+                <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+                  <xs:element name="I4AcionPara50Table022220.115051">
+                    <xs:complexType>
+                      <xs:sequence>
+                        <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                        <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                      </xs:sequence>
+                    </xs:complexType>
+                  </xs:element>
+                  <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="I4AcionPara50Table022220.115051" msdata:UseCurrentLocale="true">
+                    <xs:complexType>
+                      <xs:choice minOccurs="0" maxOccurs="unbounded">
+                        <xs:element ref="I4AcionPara50Table022220.115051" />
+                      </xs:choice>
+                    </xs:complexType>
+                  </xs:element>
+                </xs:schema>
+                <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+                  <DocumentElement>
+                    <I4AcionPara50Table022220.115051 diffgr:id="I4AcionPara50Table022220.1150511" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                      <Parameter_x0020_Name>Value1</Parameter_x0020_Name>
+                      <Parameter_x0020_Value>{vCreationDateUif}</Parameter_x0020_Value>
+                    </I4AcionPara50Table022220.115051>
+                    <I4AcionPara50Table022220.115051 diffgr:id="I4AcionPara50Table022220.1150512" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                      <Parameter_x0020_Name>Operand</Parameter_x0020_Name>
+                      <Parameter_x0020_Value>is greater than</Parameter_x0020_Value>
+                    </I4AcionPara50Table022220.115051>
+                    <I4AcionPara50Table022220.115051 diffgr:id="I4AcionPara50Table022220.1150513" msdata:rowOrder="2" diffgr:hasChanges="inserted">
+                      <Parameter_x0020_Name>Value2</Parameter_x0020_Name>
+                      <Parameter_x0020_Value>{vHojeMenos1ano}</Parameter_x0020_Value>
+                    </I4AcionPara50Table022220.115051>
+                  </DocumentElement>
+                </diffgr:diffgram>
+              </v_IfActionParameterTable>
+            </ScriptCommand>
+            <AdditionalScriptCommands>
+              <ScriptCommand xsi:type="CommentCommand" CommandID="f6776cad-27f9-4009-bbbd-211b0e1a91f1" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="82" PauseBeforeExeucution="false" v_Comment="Items in this section will run if the statement is true" CommandEnabled="true" />
+            </AdditionalScriptCommands>
+            <AdditionalScriptCommands>
+              <ScriptCommand xsi:type="VariableCommand" CommandID="ff4cbcfd-33cc-4eac-a246-8bff60053592" CommandName="VariableCommand" IsCommented="false" SelectionName="Set Variable" DefaultPause="0" LineNumber="83" PauseBeforeExeucution="false" CommandEnabled="true" v_userVariableName="vPerfilRiscoBcftNovo" v_Input="Alto" />
+            </AdditionalScriptCommands>
+            <AdditionalScriptCommands>
+              <ScriptCommand xsi:type="VariableCommand" CommandID="5f1647c9-6522-4b6a-b915-ca4b6e1eff08" CommandName="VariableCommand" IsCommented="false" SelectionName="Set Variable" DefaultPause="0" LineNumber="84" PauseBeforeExeucution="false" CommandEnabled="true" v_userVariableName="vJustificacaoAlteracaoRisco" v_Input="{vJustificacaoAlteracaoRisco} Cliente com comunicação à UIF há menos de 1 ano;" />
+            </AdditionalScriptCommands>
+            <AdditionalScriptCommands>
+              <ScriptCommand xsi:type="EndIfCommand" CommandID="b9a12450-2cf2-43b4-9346-cc23b0cdb130" CommandName="EndIfCommand" IsCommented="false" SelectionName="End If" DefaultPause="0" LineNumber="85" PauseBeforeExeucution="false" CommandEnabled="true" />
+            </AdditionalScriptCommands>
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="EndIfCommand" CommandID="a5635af8-13a9-41c2-8778-7dafea498005" CommandName="EndIfCommand" IsCommented="false" SelectionName="End If" DefaultPause="0" LineNumber="86" PauseBeforeExeucution="false" CommandEnabled="true" />
+          </AdditionalScriptCommands>
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="CommentCommand" CommandID="da6ac6a3-a94a-4606-8e7d-a5c092712f9d" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="87" PauseBeforeExeucution="false" v_Comment="Se PEP - alto" CommandEnabled="true" />
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="BeginIfCommand" CommandID="66cbec37-1ca8-4d23-a82d-7845c4f3884c" CommandName="BeginIfCommand" IsCommented="false" SelectionName="Begin If" DefaultPause="0" LineNumber="88" PauseBeforeExeucution="false" v_Comment="Verifica se o JSON de PEPs contem o cyclos ID do cliente em analise" CommandEnabled="true" v_IfActionType="Variable Compare">
+            <v_IfActionParameterTable>
+              <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+                <xs:element name="I2AcionPara57Table122519.075725">
+                  <xs:complexType>
+                    <xs:sequence>
+                      <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                      <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                    </xs:sequence>
+                  </xs:complexType>
+                </xs:element>
+                <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="I2AcionPara57Table122519.075725" msdata:UseCurrentLocale="true">
+                  <xs:complexType>
+                    <xs:choice minOccurs="0" maxOccurs="unbounded">
+                      <xs:element ref="I2AcionPara57Table122519.075725" />
+                    </xs:choice>
+                  </xs:complexType>
+                </xs:element>
+              </xs:schema>
+              <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+                <DocumentElement>
+                  <I2AcionPara57Table122519.075725 diffgr:id="I2AcionPara57Table122519.0757251" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Value1</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>{vJsonPep}</Parameter_x0020_Value>
+                  </I2AcionPara57Table122519.075725>
+                  <I2AcionPara57Table122519.075725 diffgr:id="I2AcionPara57Table122519.0757252" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Operand</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>contains</Parameter_x0020_Value>
+                  </I2AcionPara57Table122519.075725>
+                  <I2AcionPara57Table122519.075725 diffgr:id="I2AcionPara57Table122519.0757253" msdata:rowOrder="2" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Value2</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>{vCyclosId}</Parameter_x0020_Value>
+                  </I2AcionPara57Table122519.075725>
+                  <I2AcionPara57Table122519.075725 diffgr:id="I2AcionPara57Table122519.0757254" msdata:rowOrder="3" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Case Sensitive</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>No</Parameter_x0020_Value>
+                  </I2AcionPara57Table122519.075725>
+                </DocumentElement>
+              </diffgr:diffgram>
+            </v_IfActionParameterTable>
+          </ScriptCommand>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="CommentCommand" CommandID="fa341335-1ece-4397-a9a1-09067c1b1cf3" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="89" PauseBeforeExeucution="false" v_Comment="Items in this section will run if the statement is true" CommandEnabled="true" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="VariableCommand" CommandID="81436d8b-c9d6-41d0-8414-aa3a8fdc4b81" CommandName="VariableCommand" IsCommented="false" SelectionName="Set Variable" DefaultPause="0" LineNumber="90" PauseBeforeExeucution="false" CommandEnabled="true" v_userVariableName="vPerfilRiscoBcftNovo" v_Input="Alto" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="VariableCommand" CommandID="c96e7553-706c-4ac2-b063-26adf54166d4" CommandName="VariableCommand" IsCommented="false" SelectionName="Set Variable" DefaultPause="0" LineNumber="91" PauseBeforeExeucution="false" CommandEnabled="true" v_userVariableName="vJustificacaoAlteracaoRisco" v_Input="{vJustificacaoAlteracaoRisco} Cliente é PEP ou titular de outro cargo público;" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="EndIfCommand" CommandID="f9e4bf28-0baf-49ec-b8dd-a653848354b6" CommandName="EndIfCommand" IsCommented="false" SelectionName="End If" DefaultPause="0" LineNumber="92" PauseBeforeExeucution="false" CommandEnabled="true" />
+          </AdditionalScriptCommands>
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="CommentCommand" CommandID="2f2e152e-253e-4934-973a-bc76576be8b2" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="93" PauseBeforeExeucution="false" v_Comment="Se Estado (nif 6 e taxa de IVA PT) - baixo" CommandEnabled="true" />
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="BeginMultiIfCommand" CommandID="0f07fde0-fef9-46a6-ac46-ac17eba2a28b" CommandName="BeginMultiIfCommand" IsCommented="false" SelectionName="Begin Multi If" DefaultPause="0" LineNumber="94" PauseBeforeExeucution="false" CommandEnabled="true">
+            <v_IfConditionsTable>
+              <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+                <xs:element name="_x0032_uliI3Con23iionTable022320.125532">
+                  <xs:complexType>
+                    <xs:sequence>
+                      <xs:element name="Statement" type="xs:string" minOccurs="0" />
+                      <xs:element name="CommandData" type="xs:string" minOccurs="0" />
+                    </xs:sequence>
+                  </xs:complexType>
+                </xs:element>
+                <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="_x0032_uliI3Con23iionTable022320.125532" msdata:UseCurrentLocale="true">
+                  <xs:complexType>
+                    <xs:choice minOccurs="0" maxOccurs="unbounded">
+                      <xs:element ref="_x0032_uliI3Con23iionTable022320.125532" />
+                    </xs:choice>
+                  </xs:complexType>
+                </xs:element>
+              </xs:schema>
+              <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+                <DocumentElement>
+                  <_x0032_uliI3Con23iionTable022320.125532 diffgr:id="2uliI3Con23iionTable022320.1255321" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                    <Statement>If ({vPais} is equal to PT)</Statement>
+                    <CommandData>{"v_IfActionType":"Value","v_IfActionParameterTable":[{"Parameter Name":"Value1","Parameter Value":"{vPais}"},{"Parameter Name":"Operand","Parameter Value":"is equal to"},{"Parameter Name":"Value2","Parameter Value":"PT"}],"CommandID":"7ea0643f-fc92-442e-acbe-fe88f4d6c8ff","CommandName":"BeginIfCommand","IsCommented":false,"SelectionName":"Begin If","DefaultPause":0,"LineNumber":0,"PauseBeforeExeucution":false,"DisplayForeColor":"SteelBlue","v_Comment":null,"CommandEnabled":true,"CustomRendering":true}</CommandData>
+                  </_x0032_uliI3Con23iionTable022320.125532>
+                  <_x0032_uliI3Con23iionTable022320.125532 diffgr:id="2uliI3Con23iionTable022320.1255322" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                    <Statement>If ({vNif} is equal to 6)</Statement>
+                    <CommandData>{"v_IfActionType":"Value","v_IfActionParameterTable":[{"Parameter Name":"Value1","Parameter Value":"{vNif}"},{"Parameter Name":"Operand","Parameter Value":"is equal to"},{"Parameter Name":"Value2","Parameter Value":"6"}],"CommandID":"a51a8da2-6dd5-4f59-85c0-b9db727e15a7","CommandName":"BeginIfCommand","IsCommented":false,"SelectionName":"Begin If","DefaultPause":0,"LineNumber":0,"PauseBeforeExeucution":false,"DisplayForeColor":"SteelBlue","v_Comment":null,"CommandEnabled":true,"CustomRendering":true}</CommandData>
+                  </_x0032_uliI3Con23iionTable022320.125532>
+                </DocumentElement>
+              </diffgr:diffgram>
+            </v_IfConditionsTable>
+          </ScriptCommand>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="CommentCommand" CommandID="21ecf2e7-fba9-4767-ae7c-f20860beb648" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="95" PauseBeforeExeucution="false" v_Comment="Items in this section will run if the statement is true" CommandEnabled="true" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="VariableCommand" CommandID="afd91e09-d5f6-48fe-afbb-97cf2383bb11" CommandName="VariableCommand" IsCommented="false" SelectionName="Set Variable" DefaultPause="0" LineNumber="96" PauseBeforeExeucution="false" CommandEnabled="true" v_userVariableName="vPerfilRiscoBcftNovo" v_Input="Baixo" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="VariableCommand" CommandID="21d930ab-c954-48cc-b362-30293fac418d" CommandName="VariableCommand" IsCommented="false" SelectionName="Set Variable" DefaultPause="0" LineNumber="97" PauseBeforeExeucution="false" CommandEnabled="true" v_userVariableName="vJustificacaoAlteracaoRisco" v_Input="{vJustificacaoAlteracaoRisco} Cliente é Estado;" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="EndIfCommand" CommandID="94f3c74e-06fc-4099-8094-aa539287c4ab" CommandName="EndIfCommand" IsCommented="false" SelectionName="End If" DefaultPause="0" LineNumber="98" PauseBeforeExeucution="false" CommandEnabled="true" />
+          </AdditionalScriptCommands>
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="CommentCommand" CommandID="5f0ac9b1-d01c-4fc0-8ebe-a9a6d15bb51a" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="99" PauseBeforeExeucution="false" v_Comment="Se empresa cotada na bolsa - baixo." CommandEnabled="true" />
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="BeginIfCommand" CommandID="f70d6d59-e194-4cc4-8e8e-7e4f2754d08c" CommandName="BeginIfCommand" IsCommented="false" SelectionName="Begin If" DefaultPause="0" LineNumber="100" PauseBeforeExeucution="false" v_Comment="Verifica se o JSON de Empresas cotadas em bolsa contem o cyclos ID do cliente em analise" CommandEnabled="true" v_IfActionType="Variable Compare">
+            <v_IfActionParameterTable>
+              <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+                <xs:element name="I2AcionPara57Table122519.075725">
+                  <xs:complexType>
+                    <xs:sequence>
+                      <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                      <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                    </xs:sequence>
+                  </xs:complexType>
+                </xs:element>
+                <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="I2AcionPara57Table122519.075725" msdata:UseCurrentLocale="true">
+                  <xs:complexType>
+                    <xs:choice minOccurs="0" maxOccurs="unbounded">
+                      <xs:element ref="I2AcionPara57Table122519.075725" />
+                    </xs:choice>
+                  </xs:complexType>
+                </xs:element>
+              </xs:schema>
+              <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+                <DocumentElement>
+                  <I2AcionPara57Table122519.075725 diffgr:id="I2AcionPara57Table122519.0757251" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Value1</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>{vCotadaBolsa}</Parameter_x0020_Value>
+                  </I2AcionPara57Table122519.075725>
+                  <I2AcionPara57Table122519.075725 diffgr:id="I2AcionPara57Table122519.0757252" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Operand</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>contains</Parameter_x0020_Value>
+                  </I2AcionPara57Table122519.075725>
+                  <I2AcionPara57Table122519.075725 diffgr:id="I2AcionPara57Table122519.0757253" msdata:rowOrder="2" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Value2</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>{vCyclosId}</Parameter_x0020_Value>
+                  </I2AcionPara57Table122519.075725>
+                  <I2AcionPara57Table122519.075725 diffgr:id="I2AcionPara57Table122519.0757254" msdata:rowOrder="3" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Case Sensitive</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>No</Parameter_x0020_Value>
+                  </I2AcionPara57Table122519.075725>
+                </DocumentElement>
+              </diffgr:diffgram>
+            </v_IfActionParameterTable>
+          </ScriptCommand>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="CommentCommand" CommandID="3b1d54c1-3f6f-46a9-848b-329a3b5be09f" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="101" PauseBeforeExeucution="false" v_Comment="Items in this section will run if the statement is true" CommandEnabled="true" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="VariableCommand" CommandID="8b8e7313-f002-4b64-acdf-3493b5b2738f" CommandName="VariableCommand" IsCommented="false" SelectionName="Set Variable" DefaultPause="0" LineNumber="102" PauseBeforeExeucution="false" CommandEnabled="true" v_userVariableName="vPerfilRiscoBcftNovo" v_Input="Baixo" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="VariableCommand" CommandID="7ec666be-805a-46d8-a6ba-733012746b5e" CommandName="VariableCommand" IsCommented="false" SelectionName="Set Variable" DefaultPause="0" LineNumber="103" PauseBeforeExeucution="false" CommandEnabled="true" v_userVariableName="vJustificacaoAlteracaoRisco" v_Input="{vJustificacaoAlteracaoRisco} Cliente é entidade cotada em bolsa;" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="EndIfCommand" CommandID="a1846f99-f006-49e2-a4c0-cdcce57af855" CommandName="EndIfCommand" IsCommented="false" SelectionName="End If" DefaultPause="0" LineNumber="104" PauseBeforeExeucution="false" CommandEnabled="true" />
+          </AdditionalScriptCommands>
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="CommentCommand" CommandID="419c91e5-df7a-44f0-878b-bf49924b8eb7" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="105" PauseBeforeExeucution="false" v_Comment="Conclusão" CommandEnabled="true" />
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="BeginIfCommand" CommandID="71131c36-bee5-4f60-9fd4-ed18f4bb530f" CommandName="BeginIfCommand" IsCommented="false" SelectionName="Begin If" DefaultPause="0" LineNumber="106" PauseBeforeExeucution="false" CommandEnabled="true" v_IfActionType="Value">
+            <v_IfActionParameterTable>
+              <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+                <xs:element name="I0AcionPara9Table022320.120930">
+                  <xs:complexType>
+                    <xs:sequence>
+                      <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                      <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                    </xs:sequence>
+                  </xs:complexType>
+                </xs:element>
+                <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="I0AcionPara9Table022320.120930" msdata:UseCurrentLocale="true">
+                  <xs:complexType>
+                    <xs:choice minOccurs="0" maxOccurs="unbounded">
+                      <xs:element ref="I0AcionPara9Table022320.120930" />
+                    </xs:choice>
+                  </xs:complexType>
+                </xs:element>
+              </xs:schema>
+              <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+                <DocumentElement>
+                  <I0AcionPara9Table022320.120930 diffgr:id="I0AcionPara9Table022320.1209301" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Value1</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>{vPerfilRiscoBcftNovo}</Parameter_x0020_Value>
+                  </I0AcionPara9Table022320.120930>
+                  <I0AcionPara9Table022320.120930 diffgr:id="I0AcionPara9Table022320.1209302" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Operand</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>is equal to</Parameter_x0020_Value>
+                  </I0AcionPara9Table022320.120930>
+                  <I0AcionPara9Table022320.120930 diffgr:id="I0AcionPara9Table022320.1209303" msdata:rowOrder="2" diffgr:hasChanges="inserted">
+                    <Parameter_x0020_Name>Value2</Parameter_x0020_Name>
+                    <Parameter_x0020_Value>{vPerfilRiscoBCFT}</Parameter_x0020_Value>
+                  </I0AcionPara9Table022320.120930>
+                </DocumentElement>
+              </diffgr:diffgram>
+            </v_IfActionParameterTable>
+          </ScriptCommand>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="CommentCommand" CommandID="8c67db2d-8e51-4862-9762-0ac117725d05" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="107" PauseBeforeExeucution="false" v_Comment="Items in this section will run if the statement is true" CommandEnabled="true" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="WriteTextFileCommand" CommandID="59a8021d-ac96-402d-935f-ce948e34fd16" CommandName="WriteTextFileCommand" IsCommented="false" SelectionName="Write Text File" DefaultPause="0" LineNumber="108" PauseBeforeExeucution="false" v_Comment="adiciona CyclosID a ficheiro txt de clientes ja analisados" CommandEnabled="true" v_FilePath="{Folder.ScriptPath}Listas\Alterar perfil BCFT\CyclosId ja analisados pelo bot.txt" v_TextToWrite="{vCyclosId}," v_Overwrite="Append" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="VariableCommand" CommandID="634dd04e-4488-4a4c-8e05-c6b561ee9660" CommandName="VariableCommand" IsCommented="false" SelectionName="Set Variable" DefaultPause="0" LineNumber="109" PauseBeforeExeucution="false" v_Comment="Limpa variavel vPais" CommandEnabled="true" v_userVariableName="vPais" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="VariableCommand" CommandID="a0bdec30-49e2-4032-ab50-9dfb80dfe205" CommandName="VariableCommand" IsCommented="false" SelectionName="Set Variable" DefaultPause="0" LineNumber="110" PauseBeforeExeucution="false" v_Comment="Limpa variavel vJustificacaoAlteracaoRisco" CommandEnabled="true" v_userVariableName="vJustificacaoAlteracaoRisco" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="NextLoopCommand" CommandID="b7970a19-62cf-4bff-b3d5-1b621cf1495e" CommandName="NextLoopCommand" IsCommented="false" SelectionName="Next Loop" DefaultPause="0" LineNumber="111" PauseBeforeExeucution="false" CommandEnabled="true" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="ElseCommand" CommandID="8cabe997-5ffc-4689-807f-a0664a1c1254" CommandName="ElseCommand" IsCommented="false" SelectionName="Else" DefaultPause="0" LineNumber="112" PauseBeforeExeucution="false" CommandEnabled="true" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="BeginIfCommand" CommandID="9ad06bb6-78d0-4fc4-8a07-f211420d3e54" CommandName="BeginIfCommand" IsCommented="false" SelectionName="Begin If" DefaultPause="0" LineNumber="113" PauseBeforeExeucution="false" CommandEnabled="true" v_IfActionType="Value">
+              <v_IfActionParameterTable>
+                <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+                  <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="I7AcionPara43Table062921.034310" msdata:UseCurrentLocale="true">
+                    <xs:complexType>
+                      <xs:choice minOccurs="0" maxOccurs="unbounded">
+                        <xs:element name="I7AcionPara43Table062921.034310">
+                          <xs:complexType>
+                            <xs:sequence>
+                              <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                              <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                            </xs:sequence>
+                          </xs:complexType>
+                        </xs:element>
+                      </xs:choice>
+                    </xs:complexType>
+                  </xs:element>
+                </xs:schema>
+                <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+                  <DocumentElement>
+                    <I7AcionPara43Table062921.034310 diffgr:id="I7AcionPara43Table062921.0343101" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                      <Parameter_x0020_Name>Value1</Parameter_x0020_Name>
+                      <Parameter_x0020_Value>{vClassiManualPerfilRisco}</Parameter_x0020_Value>
+                    </I7AcionPara43Table062921.034310>
+                    <I7AcionPara43Table062921.034310 diffgr:id="I7AcionPara43Table062921.0343102" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                      <Parameter_x0020_Name>Operand</Parameter_x0020_Name>
+                      <Parameter_x0020_Value>is equal to</Parameter_x0020_Value>
+                    </I7AcionPara43Table062921.034310>
+                    <I7AcionPara43Table062921.034310 diffgr:id="I7AcionPara43Table062921.0343103" msdata:rowOrder="2" diffgr:hasChanges="inserted">
+                      <Parameter_x0020_Name>Value2</Parameter_x0020_Name>
+                      <Parameter_x0020_Value>true</Parameter_x0020_Value>
+                    </I7AcionPara43Table062921.034310>
+                  </DocumentElement>
+                </diffgr:diffgram>
+              </v_IfActionParameterTable>
+            </ScriptCommand>
+            <AdditionalScriptCommands>
+              <ScriptCommand xsi:type="CommentCommand" CommandID="da0c953b-b19e-4b3d-9b1c-7ad0f2677d62" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="114" PauseBeforeExeucution="false" v_Comment="Items in this section will run if the statement is true" CommandEnabled="true" />
+            </AdditionalScriptCommands>
+            <AdditionalScriptCommands>
+              <ScriptCommand xsi:type="SMTPSendEmailCommand" CommandID="43a691b4-4c58-409f-9a18-485215b4301f" CommandName="SMTPCommand" IsCommented="false" SelectionName="Send SMTP Email" DefaultPause="0" LineNumber="115" PauseBeforeExeucution="false" v_Comment="Email informando que entrou um cliente com o visto na classificação manual do perfil de risco." CommandEnabled="true" v_SMTPHost="mail.lusopay.com" v_SMTPPort="25" v_SMTPUserName="lusopay@lusopay.com" v_SMTPPassword="Kjj0w5^5" v_SMTPFromEmail="lusopay@lusopay.com" v_SMTPToEmail="admin@magnimeios.pt" v_SMTPSubject="Classificação Manual Alteração de perfil de risco BCFT - Id do cyclos {vCyclosId}" v_SMTPBody="Olá Admin,&#xD;&#xA;&#xD;&#xA;O cliente com o id do cyclos {vCyclosId} tem visto na Classificação Manual de perfil de risco com o valor {vPerfilRiscoBcftNovo} e a justificação é esta: {vJustificacaoAlteracaoRisco}. Decida se vai manter ou se muda.&#xD;&#xA;&#xD;&#xA;Cumprimentos,&#xD;&#xA;&#xD;&#xA;Taskt">
+                <v_SSLValidation>Bypass SSL Validation</v_SSLValidation>
+              </ScriptCommand>
+            </AdditionalScriptCommands>
+            <AdditionalScriptCommands>
+              <ScriptCommand xsi:type="WriteTextFileCommand" CommandID="23cc008f-5100-496e-b461-2b90e2c4aef2" CommandName="WriteTextFileCommand" IsCommented="false" SelectionName="Write Text File" DefaultPause="0" LineNumber="116" PauseBeforeExeucution="false" v_Comment="adiciona CyclosID a ficheiro txt de clientes ja analisados" CommandEnabled="true" v_FilePath="{Folder.ScriptPath}Listas\Alterar perfil BCFT\CyclosId ja analisados pelo bot.txt" v_TextToWrite="{vCyclosId}," v_Overwrite="Append" />
+            </AdditionalScriptCommands>
+            <AdditionalScriptCommands>
+              <ScriptCommand xsi:type="ElseCommand" CommandID="7bb7a1a4-c4d8-4db0-bfcb-8aa228901c3a" CommandName="ElseCommand" IsCommented="false" SelectionName="Else" DefaultPause="0" LineNumber="117" PauseBeforeExeucution="false" CommandEnabled="true" />
+            </AdditionalScriptCommands>
+            <AdditionalScriptCommands>
+              <ScriptCommand xsi:type="CommentCommand" CommandID="0dba75c0-f3b3-44a1-b79a-51db553ad6d8" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="118" PauseBeforeExeucution="false" v_Comment="Faz PUT" CommandEnabled="true" />
+            </AdditionalScriptCommands>
+            <AdditionalScriptCommands>
+              <ScriptCommand xsi:type="RESTCommand" CommandID="a3efa136-3b59-45fa-a5c5-56ca85f292d7" CommandName="RESTCommand" IsCommented="false" SelectionName="Execute REST API" DefaultPause="0" LineNumber="119" PauseBeforeExeucution="false" v_Comment="Faz PUT" CommandEnabled="true" v_BaseURL="https://app.lusopay.com:8443" v_APIEndPoint="/web/api/users/{vCyclosId}" v_APIMethodType="PUT" v_userVariableName="vRetornoApiPut" v_RequestFormat="Json">
+                <v_AdvancedParameters>
+                  <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+                    <xs:element name="A7vRESTPara6Table020721.030637">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                          <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                          <xs:element name="Content_x0020_Type" type="xs:string" minOccurs="0" />
+                          <xs:element name="Parameter_x0020_Type" type="xs:string" minOccurs="0" />
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="A7vRESTPara6Table020721.030637" msdata:UseCurrentLocale="true">
+                      <xs:complexType>
+                        <xs:choice minOccurs="0" maxOccurs="unbounded">
+                          <xs:element ref="A7vRESTPara6Table020721.030637" />
+                        </xs:choice>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:schema>
+                  <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+                    <DocumentElement>
+                      <A7vRESTPara6Table020721.030637 diffgr:id="A7vRESTPara6Table020721.0306371" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                        <Parameter_x0020_Name>accept</Parameter_x0020_Name>
+                        <Parameter_x0020_Value>*/*</Parameter_x0020_Value>
+                        <Parameter_x0020_Type>HttpHeader</Parameter_x0020_Type>
+                      </A7vRESTPara6Table020721.030637>
+                      <A7vRESTPara6Table020721.030637 diffgr:id="A7vRESTPara6Table020721.0306372" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                        <Parameter_x0020_Name>Authorization</Parameter_x0020_Name>
+                        <Parameter_x0020_Value>Basic UlBBdGFza3Q6MVJQQWVib20hMjAyMg==</Parameter_x0020_Value>
+                        <Parameter_x0020_Type>HttpHeader</Parameter_x0020_Type>
+                      </A7vRESTPara6Table020721.030637>
+                      <A7vRESTPara6Table020721.030637 diffgr:id="A7vRESTPara6Table020721.0306373" msdata:rowOrder="2" diffgr:hasChanges="inserted">
+                        <Parameter_x0020_Name>application/json</Parameter_x0020_Name>
+                        <Parameter_x0020_Value>{"name": "{vName}","username": "{vJsonUsername}","email": "{vEmail}","customValues": {"PerfilRiscoBCFT": "{vPerfilRiscoBcftNovo}","JustificacaoMudancaRiscoBCFT": "{vJustificacaoAlteracaoRisco}"},"hiddenFields": ["email","PerfilRiscoBCFT","JustificacaoMudancaRiscoBCFT"],"version": {vVersion}}</Parameter_x0020_Value>
+                        <Content_x0020_Type>application/json</Content_x0020_Type>
+                        <Parameter_x0020_Type>RequestBody</Parameter_x0020_Type>
+                      </A7vRESTPara6Table020721.030637>
+                    </DocumentElement>
+                  </diffgr:diffgram>
+                </v_AdvancedParameters>
+                <v_RESTParameters>
+                  <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+                    <xs:element name="RESTPara6Table020721.030637">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="Parameter_x0020_Type" type="xs:string" minOccurs="0" />
+                          <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                          <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="RESTPara6Table020721.030637" msdata:UseCurrentLocale="true">
+                      <xs:complexType>
+                        <xs:choice minOccurs="0" maxOccurs="unbounded">
+                          <xs:element ref="RESTPara6Table020721.030637" />
+                        </xs:choice>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:schema>
+                  <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1" />
+                </v_RESTParameters>
+              </ScriptCommand>
+            </AdditionalScriptCommands>
+            <AdditionalScriptCommands>
+              <ScriptCommand xsi:type="BeginIfCommand" CommandID="60829342-2c89-43ee-bdd6-8c039ac8c57e" CommandName="BeginIfCommand" IsCommented="false" SelectionName="Begin If" DefaultPause="0" LineNumber="120" PauseBeforeExeucution="false" CommandEnabled="true" v_IfActionType="Variable Has Value">
+                <v_IfActionParameterTable>
+                  <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+                    <xs:element name="I3AcionPara11Table020721.031155">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                          <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="I3AcionPara11Table020721.031155" msdata:UseCurrentLocale="true">
+                      <xs:complexType>
+                        <xs:choice minOccurs="0" maxOccurs="unbounded">
+                          <xs:element ref="I3AcionPara11Table020721.031155" />
+                        </xs:choice>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:schema>
+                  <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+                    <DocumentElement>
+                      <I3AcionPara11Table020721.031155 diffgr:id="I3AcionPara11Table020721.0311551" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                        <Parameter_x0020_Name>Variable Name</Parameter_x0020_Name>
+                        <Parameter_x0020_Value>{vRetornoApiPut}</Parameter_x0020_Value>
+                      </I3AcionPara11Table020721.031155>
+                    </DocumentElement>
+                  </diffgr:diffgram>
+                </v_IfActionParameterTable>
+              </ScriptCommand>
+              <AdditionalScriptCommands>
+                <ScriptCommand xsi:type="CommentCommand" CommandID="d699e4b3-6e21-4a9c-ad6d-6d3f4d7d1b9b" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="121" PauseBeforeExeucution="false" v_Comment="Se o retorno tiver informaçao, houve erro" CommandEnabled="true" />
+              </AdditionalScriptCommands>
+              <AdditionalScriptCommands>
+                <ScriptCommand xsi:type="SMTPSendEmailCommand" CommandID="0f4c0b03-4ee0-450f-9954-0a8080e97652" CommandName="SMTPCommand" IsCommented="false" SelectionName="Send SMTP Email" DefaultPause="0" LineNumber="122" PauseBeforeExeucution="false" v_Comment="Email informando de erro no robô." CommandEnabled="true" v_SMTPHost="mail.lusopay.com" v_SMTPPort="25" v_SMTPUserName="lusopay@lusopay.com" v_SMTPPassword="Kjj0w5^5" v_SMTPFromEmail="lusopay@lusopay.com" v_SMTPToEmail="admin@magnimeios.pt" v_SMTPSubject="Erro no robô de alteração de perfil de risco BCFT" v_SMTPBody="Olá,&#xD;&#xA;&#xD;&#xA;Existe um problema com o robô de alteração de perfil de risco BCFT. Por favor, analisar o problema.&#xD;&#xA;Estava a analisar o cliente com o seguinte cyclos ID: {vCyclosId}&#xD;&#xA;O retorno foi: {vRetornoApiPut}&#xD;&#xA;Cumprimentos,&#xD;&#xA;&#xD;&#xA;Taskt">
+                  <v_SSLValidation>Bypass SSL Validation</v_SSLValidation>
+                </ScriptCommand>
+              </AdditionalScriptCommands>
+              <AdditionalScriptCommands>
+                <ScriptCommand xsi:type="MessageBoxCommand" CommandID="444d13c1-8b5a-4b9b-976b-d53f33021387" CommandName="MessageBoxCommand" IsCommented="false" SelectionName="Show Message" DefaultPause="0" LineNumber="123" PauseBeforeExeucution="false" CommandEnabled="true" v_Message="Cliente ID: {vCyclosId}&#xD;&#xA;Justificaçao da alteraçao do risco: {vJustificacaoAlteracaoRisco}&#xD;&#xA;JSON: {&quot;name&quot;: &quot;{vName}&quot;,&quot;username&quot;: &quot;{vJsonUsername}&quot;,&quot;email&quot;: &quot;{vEmail}&quot;,&quot;customValues&quot;: {&quot;PerfilRiscoBCFT&quot;: &quot;{vPerfilRiscoBcftNovo}&quot;,&quot;JustificacaoMudancaRiscoBCFT&quot;: &quot;{vJustificacaoAlteracaoRisco}&quot;},&quot;hiddenFields&quot;: [&quot;email&quot;,&quot;PerfilRiscoBCFT&quot;,&quot;JustificacaoMudancaRiscoBCFT&quot;],&quot;version&quot;: {vVersion}}&#xD;&#xA;Retorno da API: {vRetornoApiPut}" v_AutoCloseAfter="0" />
+              </AdditionalScriptCommands>
+              <AdditionalScriptCommands>
+                <ScriptCommand xsi:type="StopTaskCommand" CommandID="9372c847-b3bd-472d-85b1-cd956aa56091" CommandName="StopTaskCommand" IsCommented="false" SelectionName="Stop Current Task" DefaultPause="0" LineNumber="124" PauseBeforeExeucution="false" CommandEnabled="true" />
+              </AdditionalScriptCommands>
+              <AdditionalScriptCommands>
+                <ScriptCommand xsi:type="ElseCommand" CommandID="ac0b665f-7503-4800-8368-08a0547b8228" CommandName="ElseCommand" IsCommented="false" SelectionName="Else" DefaultPause="0" LineNumber="125" PauseBeforeExeucution="false" CommandEnabled="true" />
+              </AdditionalScriptCommands>
+              <AdditionalScriptCommands>
+                <ScriptCommand xsi:type="MessageBoxCommand" CommandID="e7c9b796-2252-4c55-aa7a-ffac687b5a6b" CommandName="MessageBoxCommand" IsCommented="false" SelectionName="Show Message" DefaultPause="0" LineNumber="126" PauseBeforeExeucution="false" CommandEnabled="true" v_Message="O cliente com id {vCyclosId} teve o seu perfil de risco alterado" v_AutoCloseAfter="1" />
+              </AdditionalScriptCommands>
+              <AdditionalScriptCommands>
+                <ScriptCommand xsi:type="WriteTextFileCommand" CommandID="13c09a3f-afa0-46be-a656-41eabae16f34" CommandName="WriteTextFileCommand" IsCommented="false" SelectionName="Write Text File" DefaultPause="0" LineNumber="127" PauseBeforeExeucution="false" v_Comment="" CommandEnabled="true" v_FilePath="{Folder.ScriptPath}\Listas\Alterar perfil BCFT\clientes com perfil alterado.txt" v_TextToWrite="O cliente com id {vCyclosId} teve o seu perfil de risco alterado[crLF]" v_Overwrite="Append" />
+              </AdditionalScriptCommands>
+              <AdditionalScriptCommands>
+                <ScriptCommand xsi:type="WriteTextFileCommand" CommandID="f2e655fe-af6a-459c-b607-f8ad3c44b8c2" CommandName="WriteTextFileCommand" IsCommented="false" SelectionName="Write Text File" DefaultPause="0" LineNumber="128" PauseBeforeExeucution="false" v_Comment="adiciona CyclosID a ficheiro txt de clientes ja analisados" CommandEnabled="true" v_FilePath="{Folder.ScriptPath}Listas\Alterar perfil BCFT\CyclosId ja analisados pelo bot.txt" v_TextToWrite="{vCyclosId}," v_Overwrite="Append" />
+              </AdditionalScriptCommands>
+              <AdditionalScriptCommands>
+                <ScriptCommand xsi:type="EndIfCommand" CommandID="ac5d31ac-bc5e-4391-aa30-545ee5d2c2a7" CommandName="EndIfCommand" IsCommented="false" SelectionName="End If" DefaultPause="0" LineNumber="129" PauseBeforeExeucution="false" CommandEnabled="true" />
+              </AdditionalScriptCommands>
+            </AdditionalScriptCommands>
+            <AdditionalScriptCommands>
+              <ScriptCommand xsi:type="EndIfCommand" CommandID="fffded44-12ad-4855-abc4-1ce8b5870003" CommandName="EndIfCommand" IsCommented="false" SelectionName="End If" DefaultPause="0" LineNumber="130" PauseBeforeExeucution="false" CommandEnabled="true" />
+            </AdditionalScriptCommands>
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="VariableCommand" CommandID="ec7199ee-d887-41f8-bf0a-342d5223c7e5" CommandName="VariableCommand" IsCommented="false" SelectionName="Set Variable" DefaultPause="0" LineNumber="131" PauseBeforeExeucution="false" v_Comment="Limpa variavel vPais" CommandEnabled="true" v_userVariableName="vPais" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="VariableCommand" CommandID="3b189f3f-2801-4720-9664-ff3ebe61578f" CommandName="VariableCommand" IsCommented="false" SelectionName="Set Variable" DefaultPause="0" LineNumber="132" PauseBeforeExeucution="false" v_Comment="Limpa variavel vRetornoApiPut" CommandEnabled="true" v_userVariableName="vRetornoApiPut" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="VariableCommand" CommandID="53f01c6a-cad0-4c4a-acf4-fdf095308f17" CommandName="VariableCommand" IsCommented="false" SelectionName="Set Variable" DefaultPause="0" LineNumber="133" PauseBeforeExeucution="false" v_Comment="Limpa variavel vJustificacaoAlteracaoRisco" CommandEnabled="true" v_userVariableName="vJustificacaoAlteracaoRisco" />
+          </AdditionalScriptCommands>
+          <AdditionalScriptCommands>
+            <ScriptCommand xsi:type="EndIfCommand" CommandID="10da9888-3b17-4065-9f7a-58bb04b3ac4e" CommandName="EndIfCommand" IsCommented="false" SelectionName="End If" DefaultPause="0" LineNumber="134" PauseBeforeExeucution="false" CommandEnabled="true" />
+          </AdditionalScriptCommands>
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="ElseCommand" CommandID="1149e930-6cdd-4580-925a-28cc1d209fcb" CommandName="ElseCommand" IsCommented="false" SelectionName="Else" DefaultPause="0" LineNumber="135" PauseBeforeExeucution="false" CommandEnabled="true" />
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="WriteTextFileCommand" CommandID="9f69292f-8a31-4ddc-9555-f51de9e7065a" CommandName="WriteTextFileCommand" IsCommented="false" SelectionName="Write Text File" DefaultPause="0" LineNumber="136" PauseBeforeExeucution="false" v_Comment="adiciona CyclosID a ficheiro txt de clientes ja analisados" CommandEnabled="true" v_FilePath="{Folder.ScriptPath}Listas\Alterar perfil BCFT\CyclosId ja analisados pelo bot.txt" v_TextToWrite="{vCyclosId}," v_Overwrite="Append" />
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="NextLoopCommand" CommandID="1d53b0d0-9de7-4467-9b67-f1c004197998" CommandName="NextLoopCommand" IsCommented="false" SelectionName="Next Loop" DefaultPause="0" LineNumber="137" PauseBeforeExeucution="false" CommandEnabled="true" />
+        </AdditionalScriptCommands>
+        <AdditionalScriptCommands>
+          <ScriptCommand xsi:type="EndIfCommand" CommandID="213acf13-75df-4667-baa6-52c65e43006c" CommandName="EndIfCommand" IsCommented="false" SelectionName="End If" DefaultPause="0" LineNumber="138" PauseBeforeExeucution="false" CommandEnabled="true" />
+        </AdditionalScriptCommands>
+      </AdditionalScriptCommands>
+      <AdditionalScriptCommands>
+        <ScriptCommand xsi:type="EndLoopCommand" CommandID="94e05900-399f-40fb-8c37-99bd71eb7e4d" CommandName="EndLoopCommand" IsCommented="false" SelectionName="End Loop" DefaultPause="0" LineNumber="139" PauseBeforeExeucution="false" CommandEnabled="true" />
+      </AdditionalScriptCommands>
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="DeleteFileCommand" CommandID="81a1f3a5-d8cf-4078-a16c-eb8b400862b5" CommandName="DeleteFileCommand" IsCommented="false" SelectionName="Delete File" DefaultPause="0" LineNumber="140" PauseBeforeExeucution="false" v_Comment="" CommandEnabled="true" v_SourceFilePath="{Folder.ScriptPath}Listas\Alterar perfil BCFT\CyclosId ja analisados pelo bot.txt" />
+    </ScriptAction>
+  </Commands>
+  <Variables>
+    <ScriptVariable>
+      <VariableName>v91DiasAtras</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vClassiManualPerfilRisco</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vCotadaBolsa</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vCreationDateUif</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vCreationDateUifAno</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vCreationDateUifDia</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vCreationDateUifMes</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vCyclosId</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vCyclosId0</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vCyclosIdAnalisados</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vCyclosIdAnalisadosLista</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vCyclosIdLista</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vEmail</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vHoje</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vHojeMenos1ano</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vJson</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vJsonPep</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vJsonPut</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vJsonUsername</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vJsonValorRecebido3Meses</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vJsonVolumeNegocios</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vJustificacaoAlteracaoRisco</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vLastModificationDateUif</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vLoop</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vMediaMensal</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vName</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vNif</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vPais</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vPepBasic</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vPepLista</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vPerfilRiscoBCFT</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vPerfilRiscoBcftNovo</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vQuantidadeCyclosIdAnalisados</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vRestApiAddress</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vRetornoApiPut</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vRiscoBcftAtual</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vTotalRecebido</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vTotalRecebidoExtraido</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vUltimoCyclosIdAnalisado</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vUsername</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vUsernamesBasic</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vUsernamesComunicadosUif</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vUsernamesComunicadosUifLista</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vUsernamesList</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vVersion</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vVolumeNegocios</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+    <ScriptVariable>
+      <VariableName>vVolumeNegociosComPonto</VariableName>
+      <VariableValue xsi:type="xsd:string"></VariableValue>
+    </ScriptVariable>
+  </Variables>
+</Script>

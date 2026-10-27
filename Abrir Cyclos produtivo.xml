@@ -1,0 +1,134 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Script xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Commands>
+    <ScriptAction>
+      <ScriptCommand xsi:type="SeleniumBrowserCreateCommand" CommandID="dc3a8645-226b-4fab-aa2d-2ddd05b4b7c0" CommandName="SeleniumBrowserCreateCommand" IsCommented="false" SelectionName="Create Browser" DefaultPause="0" LineNumber="1" PauseBeforeExeucution="false" v_Comment="Abrir google chrome" CommandEnabled="true" v_InstanceName="default" v_BrowserWindowOption="Maximize" v_EngineType="Chrome" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="SeleniumBrowserNavigateURLCommand" CommandID="17aa56fd-8fbd-4277-94f4-043d186c56c4" CommandName="SeleniumBrowserNavigateURLCommand" IsCommented="false" SelectionName="Navigate to URL" DefaultPause="0" LineNumber="2" PauseBeforeExeucution="false" v_Comment="Abrir cyclos" CommandEnabled="true" v_InstanceName="default" v_URL="https://app.lusopay.com:8443/web/#login" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="PauseCommand" CommandID="a8454669-cb30-41bd-973f-2dd03d2160c6" CommandName="PauseCommand" IsCommented="false" SelectionName="Pause Script" DefaultPause="0" LineNumber="3" PauseBeforeExeucution="false" v_Comment="aguardar que a pagina web abra totalmente" CommandEnabled="true" v_PauseLength="5000" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="CommentCommand" CommandID="d22921ff-8242-4473-8f41-081025a1cda2" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="4" PauseBeforeExeucution="false" v_Comment="Inserir nome de utilizador" CommandEnabled="true" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="SeleniumBrowserElementActionCommand" CommandID="e95ec949-d9f5-4725-a6b4-cb15c631272f" CommandName="SeleniumBrowserElementActionCommand" IsCommented="false" SelectionName="Element Action" DefaultPause="0" LineNumber="5" PauseBeforeExeucution="false" CommandEnabled="true" v_InstanceName="default" v_SeleniumSearchType="Find Element By Name" v_SeleniumSearchParameter="principal">
+        <v_SeleniumElementAction>Set Text</v_SeleniumElementAction>
+        <v_WebActionParameterTable>
+          <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+            <xs:element name="WebActionParamTable121819.113924">
+              <xs:complexType>
+                <xs:sequence>
+                  <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                  <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                </xs:sequence>
+              </xs:complexType>
+            </xs:element>
+            <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="WebActionParamTable121819.113924" msdata:UseCurrentLocale="true">
+              <xs:complexType>
+                <xs:choice minOccurs="0" maxOccurs="unbounded">
+                  <xs:element ref="WebActionParamTable121819.113924" />
+                </xs:choice>
+              </xs:complexType>
+            </xs:element>
+          </xs:schema>
+          <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+            <DocumentElement>
+              <WebActionParamTable121819.113924 diffgr:id="WebActionParamTable121819.1139241" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                <Parameter_x0020_Name>Text To Set</Parameter_x0020_Name>
+                <Parameter_x0020_Value>RPAtaskt</Parameter_x0020_Value>
+              </WebActionParamTable121819.113924>
+              <WebActionParamTable121819.113924 diffgr:id="WebActionParamTable121819.1139242" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                <Parameter_x0020_Name>Clear Element Before Setting Text</Parameter_x0020_Name>
+                <Parameter_x0020_Value>No</Parameter_x0020_Value>
+              </WebActionParamTable121819.113924>
+            </DocumentElement>
+          </diffgr:diffgram>
+        </v_WebActionParameterTable>
+      </ScriptCommand>
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="CommentCommand" CommandID="56553ce3-9840-49eb-94a3-bf3ffd040b5d" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="6" PauseBeforeExeucution="false" v_Comment="Inserir senha" CommandEnabled="true" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="SeleniumBrowserElementActionCommand" CommandID="ab1e34ca-e5c2-4a3c-817f-48c8ee788c02" CommandName="SeleniumBrowserElementActionCommand" IsCommented="false" SelectionName="Element Action" DefaultPause="0" LineNumber="7" PauseBeforeExeucution="false" CommandEnabled="true" v_InstanceName="default" v_SeleniumSearchType="Find Element By Name" v_SeleniumSearchParameter="password">
+        <v_SeleniumElementAction>Set Text</v_SeleniumElementAction>
+        <v_WebActionParameterTable>
+          <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+            <xs:element name="WebActionParamTable121819.114546">
+              <xs:complexType>
+                <xs:sequence>
+                  <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                  <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                </xs:sequence>
+              </xs:complexType>
+            </xs:element>
+            <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="WebActionParamTable121819.114546" msdata:UseCurrentLocale="true">
+              <xs:complexType>
+                <xs:choice minOccurs="0" maxOccurs="unbounded">
+                  <xs:element ref="WebActionParamTable121819.114546" />
+                </xs:choice>
+              </xs:complexType>
+            </xs:element>
+          </xs:schema>
+          <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+            <DocumentElement>
+              <WebActionParamTable121819.114546 diffgr:id="WebActionParamTable121819.1145461" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                <Parameter_x0020_Name>Text To Set</Parameter_x0020_Name>
+                <Parameter_x0020_Value>1RPAebom!2020</Parameter_x0020_Value>
+              </WebActionParamTable121819.114546>
+              <WebActionParamTable121819.114546 diffgr:id="WebActionParamTable121819.1145462" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                <Parameter_x0020_Name>Clear Element Before Setting Text</Parameter_x0020_Name>
+                <Parameter_x0020_Value>No</Parameter_x0020_Value>
+              </WebActionParamTable121819.114546>
+            </DocumentElement>
+          </diffgr:diffgram>
+        </v_WebActionParameterTable>
+      </ScriptCommand>
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="CommentCommand" CommandID="0344d53b-e35d-44dc-97ce-b44be9772097" CommandName="CommentCommand" IsCommented="false" SelectionName="Add Code Comment" DefaultPause="0" LineNumber="8" PauseBeforeExeucution="false" v_Comment="Clicar Entrar" CommandEnabled="true" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="SeleniumBrowserElementActionCommand" CommandID="ab49df06-89ce-4287-ade0-33168e4e6ac1" CommandName="SeleniumBrowserElementActionCommand" IsCommented="false" SelectionName="Element Action" DefaultPause="0" LineNumber="9" PauseBeforeExeucution="false" CommandEnabled="true" v_InstanceName="default" v_SeleniumSearchType="Find Element By XPath" v_SeleniumSearchParameter="/html/body/div[3]/div[3]/div/div/div[2]/div[2]/div[2]/div/div/div/div[2]/form/div/button/div">
+        <v_SeleniumElementAction>Left Click</v_SeleniumElementAction>
+        <v_WebActionParameterTable>
+          <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+            <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="WebActionParamTable121819.114834" msdata:UseCurrentLocale="true">
+              <xs:complexType>
+                <xs:choice minOccurs="0" maxOccurs="unbounded">
+                  <xs:element name="WebActionParamTable121819.114834">
+                    <xs:complexType>
+                      <xs:sequence>
+                        <xs:element name="Parameter_x0020_Name" type="xs:string" minOccurs="0" />
+                        <xs:element name="Parameter_x0020_Value" type="xs:string" minOccurs="0" />
+                      </xs:sequence>
+                    </xs:complexType>
+                  </xs:element>
+                </xs:choice>
+              </xs:complexType>
+            </xs:element>
+          </xs:schema>
+          <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+            <DocumentElement>
+              <WebActionParamTable121819.114834 diffgr:id="WebActionParamTable121819.1148341" msdata:rowOrder="0" diffgr:hasChanges="inserted">
+                <Parameter_x0020_Name>X Adjustment</Parameter_x0020_Name>
+                <Parameter_x0020_Value>0</Parameter_x0020_Value>
+              </WebActionParamTable121819.114834>
+              <WebActionParamTable121819.114834 diffgr:id="WebActionParamTable121819.1148342" msdata:rowOrder="1" diffgr:hasChanges="inserted">
+                <Parameter_x0020_Name>Y Adjustment</Parameter_x0020_Name>
+                <Parameter_x0020_Value>0</Parameter_x0020_Value>
+              </WebActionParamTable121819.114834>
+            </DocumentElement>
+          </diffgr:diffgram>
+        </v_WebActionParameterTable>
+      </ScriptCommand>
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="PauseCommand" CommandID="d9ca9550-d3f9-4edd-a5d3-91aa2cf3ef20" CommandName="PauseCommand" IsCommented="false" SelectionName="Pause Script" DefaultPause="0" LineNumber="10" PauseBeforeExeucution="false" v_Comment="aguardar que a pagina web abra totalmente" CommandEnabled="true" v_PauseLength="5000" />
+    </ScriptAction>
+  </Commands>
+  <Variables />
+</Script>
