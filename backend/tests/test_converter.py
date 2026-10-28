@@ -444,3 +444,9 @@ def test_batch_import_endpoint(env, clients):
     rows = {r["file"]: r for r in a.post("/api/flows/import-batch", json=body).json()}
     assert rows["Projeto X.zip"]["status"] == "nova_versao" and a.get(url).content == b"55"
     assert clients["operator"].post("/api/flows/import-batch", json=body).status_code == 403
+
+
+def test_single_convert_refuses_zip_with_many_robots(env, clients):
+    body = {"filename": "Robots.zip", "content_b64": base64.b64encode(_openbots_project()).decode()}
+    r = clients["admin"].post("/api/flows/convert", json=body)
+    assert r.status_code == 422 and "Importar vários" in r.json()["detail"]

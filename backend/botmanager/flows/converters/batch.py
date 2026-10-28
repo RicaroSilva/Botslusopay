@@ -25,6 +25,8 @@ def split_robots(data: bytes) -> list[tuple[str, bytes]]:
     # pasta raiz única (ex.: Robots/...) é retirada
     while paths and all("/" in p for p in paths) and len({p.split("/", 1)[0] for p in paths}) == 1:
         paths = {p.split("/", 1)[1]: i for p, i in paths.items()}
+    if any(p.lower() == "project.obconfig" for p in paths):  # o .zip é um único projeto OpenBots
+        return [("projeto.zip", data)]
     robots: list[tuple[str, bytes]] = []
     folders: dict[str, list[str]] = {}
     for p in sorted(paths):

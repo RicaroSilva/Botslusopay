@@ -218,6 +218,13 @@ def convert_robot(body: ConvertIn, user: User = Depends(require_role(Role.ADMIN)
     except (binascii.Error, ValueError) as exc:
         raise HTTPException(422, "conteúdo inválido") from exc
     try:
+        if body.filename.lower().endswith(".zip") or data[:2] == b"PK":
+            from ..flows.converters.batch import split_robots
+
+            robots = split_robots(data)
+            if len(robots) > 1:
+                raise HTTPException(422, f"Este .zip tem {len(robots)} robôs. Use o cartão 'Importar vários robôs de uma "
+                                         "vez', que cria um fluxo para cada um.")
         result = convert(read_robot(data, body.filename), test_email=body.test_email)
     except RobotFormatError as exc:
         raise HTTPException(422, str(exc)) from exc
