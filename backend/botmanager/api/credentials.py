@@ -1,6 +1,7 @@
 """Cofre de credenciais (apenas administradores). Os segredos nunca saem da API."""
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -31,6 +32,19 @@ class CredentialUpdate(BaseModel):
     fields: dict[str, Any] = {}  # segredos omitidos mantêm-se
 
 
+EMAIL_RE = re.compile(r"^[^@\s,;<>]+@[^@\s,;<>]+\.[A-Za-z]{2,}$")
+
+
+def _check_public(kind: str, public: dict[str, Any], existing: dict[str, Any] | None = None) -> None:
+    """O servidor SMTP rejeita remetentes sem domínio (ex.: 'teste'): validar já ao gravar."""
+    if kind != "smtp":
+        return
+    merged = {**(existing or {}), **public}
+    sender = merged.get("from_address") or merged.get("username")
+    if not sender or not EMAIL_RE.match(str(sender)):
+        raise vault.VaultError("o remetente (from_address) tem de ser um endereço de email completo, ex.: geral@lusopay.com")
+
+
 def _out(c: Credential) -> dict[str, Any]:
     spec = vault.KINDS[c.kind]
     return {"id": c.id, "name": c.name, "kind": c.kind, "description": c.description,
@@ -55,6 +69,7 @@ def create_credential(body: CredentialIn, request: Request, user: User = Depends
         raise HTTPException(409, "já existe uma credencial com este nome")
     try:
         public, secret = vault.split_fields(body.kind, body.fields)
+        _check_public(body.kind, public)
         missing = [f for f in vault.KINDS[body.kind]["secret"] if not secret.get(f)]
         if missing:
             raise vault.VaultError(f"campos secretos em falta: {missing}")
@@ -78,6 +93,8 @@ def update_credential(cred_id: str, body: CredentialUpdate, request: Request, us
         raise HTTPException(404, "credencial não encontrada")
     try:
         public, secret = vault.split_fields(c.kind, body.fields)
+        if public:
+            _check_public(c.kind, public, c.public_fields)
         if secret:
             merged = {**vault.decrypt(c.encrypted_data), **{k: v for k, v in secret.items() if v}}
             c.encrypted_data = vault.encrypt(merged)

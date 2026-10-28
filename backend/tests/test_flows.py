@@ -207,3 +207,9 @@ def test_bootstrap(env, monkeypatch):
     bm_config.get_settings.cache_clear()
     bootstrap(env["db"])
     assert w.token_hash == hash_token("s" * 40)
+
+
+def test_smtp_sender_must_be_full_email(clients):
+    bad = {**SMTP, "name": "smtp-mau", "fields": {**SMTP["fields"], "from_address": "teste"}}
+    r = clients["admin"].post("/api/admin/credentials", json=bad)
+    assert r.status_code == 422 and "email completo" in r.json()["detail"]
