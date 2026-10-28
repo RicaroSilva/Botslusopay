@@ -187,7 +187,7 @@ class Translator:
         if prop in ("Count", "Length"):
             name = self.var(base)
             self.referenced.add(name)
-            return f"({name} | parsejson | length)" if prop == "Count" else f"({name} | text | length)"
+            return f"({name} | as_list | length)" if prop == "Count" else f"({name} | text | length)"
         if prop:
             return None  # propriedade desconhecida: mantém-se como texto
         name = self.var(t)
@@ -388,7 +388,7 @@ class Translator:
             item_var = self.var(a["v_LoopItemVariable"]) if a.get("v_LoopItemVariable") else list_var
             items = f"{list_var}_colecao"
             before = [self.step("set", "Lista do ciclo", variable=f"{list_var}_colecao",
-                                expr=f"(({self.collection(param)}) | parsejson) or []")]
+                                expr=f"({self.collection(param)}) | as_list")]
             self.note("convertido", "ciclo sobre lista", c)
         elif c.type == "BeginNumberOfTimesLoopCommand":
             start = self.num_expr(a.get("v_LoopStart") or "0")
@@ -643,11 +643,11 @@ class Translator:
 
     def c_GetListCountCommand(self, c):
         out = self._out(c, "v_UserVariableName", "v_applyToVariableName")
-        return self._set_expr(c, out, f"(({self.collection(c.attrs.get('v_ListName', ''))}) | parsejson) | length", "Contar elementos")
+        return self._set_expr(c, out, f"(({self.collection(c.attrs.get('v_ListName', ''))}) | as_list) | length", "Contar elementos")
 
     def c_GetListItemCommand(self, c):
         out = self._out(c, "v_UserVariableName", "v_applyToVariableName")
-        return self._set_expr(c, out, f"(({self.collection(c.attrs.get('v_ListName', ''))}) | parsejson)[{self.num_expr(c.attrs.get('v_ItemIndex', '0'))}]",
+        return self._set_expr(c, out, f"(({self.collection(c.attrs.get('v_ListName', ''))}) | as_list)[{self.num_expr(c.attrs.get('v_ItemIndex', '0'))}]",
                               "Obter elemento da lista")
 
     def c_StringReplaceCommand(self, c):

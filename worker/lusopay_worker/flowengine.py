@@ -98,6 +98,27 @@ def parse_json(v: Any) -> Any:
     return v
 
 
+def as_list(v: Any) -> list:
+    """Lista a partir de uma lista, de JSON de uma lista ou de um valor único (o 'Parse JSON Model' do OpenBots
+    devolve listas; os passos convertidos usam o valor tal como vier)."""
+    if v is None:
+        return []
+    if isinstance(v, list):
+        return v
+    if isinstance(v, (bytes, str)):
+        t = v.decode() if isinstance(v, bytes) else v
+        if not t.strip():
+            return []
+        try:
+            parsed = json.loads(t)
+        except ValueError:
+            return [t]
+        return parsed if isinstance(parsed, list) else [parsed]
+    if isinstance(v, tuple):
+        return list(v)
+    return [v]
+
+
 def to_num(v: Any) -> Any:
     if isinstance(v, bool):
         return int(v)
@@ -251,6 +272,7 @@ def make_env() -> SandboxedEnvironment:
     env.filters["find"] = find_key
     env.filters["text"] = to_text
     env.filters["parsejson"] = parse_json
+    env.filters["as_list"] = as_list
     env.filters["num"] = to_num
     env.filters["between"] = text_between
     env.filters["after"] = text_after

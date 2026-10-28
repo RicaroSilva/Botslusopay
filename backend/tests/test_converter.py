@@ -458,3 +458,32 @@ def test_datetime_now_parts_in_templates():
 
     tr = Translator(Robot(name="x", source_format="taskt", commands=[]))
     assert tr.tpl("erro_{DateTime.Now.Year}-{DateTime.Now.Month}.txt") == "erro_{{ now().year }}-{{ now().month }}.txt"
+
+
+def test_openbots_parse_json_model_then_get_list_item(tmp_path):
+    """No OpenBots o 'Parse JSON Model' devolve uma lista e o robô tira o elemento 0 com 'Get List Item'."""
+    import sys
+    from pathlib import Path
+
+    out = "v_OutputUserVariableName"
+    doc = {"Commands": [
+        _ob("SetVariableCommand", 1, v_Input='[{"name": "Ana"}, {"name": "Rui"}]', **{out: "{vJson}"}),
+        _ob("ParseJSONArrayCommand", 2, v_JsonArrayName="{vJson}", **{out: "{vLista}"}),
+        _ob("WriteCreateTextFileCommand", 3, v_FilePath="{ProjectPath}\\nomes.txt", v_TextToWrite="Nomes",
+            v_Overwrite="Overwrite"),
+        _ob_block(_ob("LoopCollectionCommand", 4, v_LoopParameter="{vLista}", **{out: "{vItem}"}), [
+            _ob("ParseJSONModelCommand", 5, v_JsonObject="{vItem}",
+                v_ParseObjects=[{"Json Selector": "$.name", "Output Variable": "{vArray}"}]),
+            _ob("GetListItemCommand", 6, v_ListName="{vArray}", v_ItemIndex="0", **{out: "{vNome}"}),
+            _ob("WriteCreateTextFileCommand", 7, v_FilePath="{ProjectPath}\\nomes.txt", v_TextToWrite="[crLF]{vNome}",
+                v_Overwrite="Append"),
+            _ob("EndLoopCommand", 8)]),
+    ]}
+    res = convert(read_robot(json.dumps(doc).encode(), "Main.obscript"))
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "worker"))
+    from lusopay_worker.flowengine import Engine
+
+    result = Engine({"run_id": "r", "flow": {"version": 1, "definition": res.definition}, "credentials": {},
+                     "allowed_hosts": []}, tmp_path, emit=lambda line: None).run()
+    assert result["status"] == "SUCCEEDED", result
+    assert (tmp_path / "nomes.txt").read_text(encoding="utf-8") == "Nomes\nAna\nRui"
