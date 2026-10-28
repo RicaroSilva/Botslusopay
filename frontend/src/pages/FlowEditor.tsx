@@ -32,9 +32,10 @@ function isEmpty(v: unknown): boolean {
 
 export function clean(steps: Step[]): Step[] {
   return steps.map((s) => {
-    const out: Step = { id: s.id, type: s.type };
-    if (s.name) out.name = s.name;
-    if (s.continue_on_error) out.continue_on_error = true;
+    // mantém campos que o formulário não conhece (ex.: 'carry' de fluxos importados)
+    const out: Step = { ...s };
+    if (!s.name) delete out.name;
+    if (!s.continue_on_error) delete out.continue_on_error;
     for (const f of SPEC_BY_TYPE[s.type]?.fields ?? []) {
       let v = s[f.name];
       if (f.kind === "steps") {
@@ -43,7 +44,10 @@ export function clean(steps: Step[]): Step[] {
       }
       if (f.kind === "list") v = ((v as string[]) ?? []).filter((x) => x.trim() !== "");
       if (f.kind === "columns") v = ((v as { header: string }[]) ?? []).filter((c) => c.header.trim() !== "");
-      if (isEmpty(v) && !f.required) continue;
+      if (isEmpty(v) && !f.required) {
+        delete out[f.name];
+        continue;
+      }
       out[f.name] = v;
     }
     return out;

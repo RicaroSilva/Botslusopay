@@ -296,3 +296,44 @@ def test_query_params_merge_with_url_params(tmp_path):
     eng, _, calls = make_engine(tmp_path, [step])
     assert eng.run()["status"] == "SUCCEEDED"
     assert calls[0].url.query.decode() == "fields=id&fields=name&pageSize=99999"
+
+
+def test_taskt_compat_steps_and_filters(tmp_path):
+    steps = [
+        {"id": "t", "type": "set", "variable": "total", "expr": "0"},
+        {"id": "w", "type": "text_write", "file": "r.txt", "content": "cab\n"},
+        {"id": "loop", "type": "foreach", "items_expr": "range(0, 10)", "item_variable": "i", "carry": ["total"], "steps": [
+            {"id": "c", "type": "if", "condition": "taskt_compare(i, 'is equal to', '2')", "then": [{"id": "n", "type": "continue"}]},
+            {"id": "b", "type": "if", "condition": "taskt_compare(i, 'is greater than', '4')", "then": [{"id": "x", "type": "break"}]},
+            {"id": "inc", "type": "set", "variable": "total", "expr": "((total | num) + 1) | num"},
+            {"id": "a", "type": "text_write", "file": "r.txt", "content": "{{ i }}\n", "append": True},
+        ]},
+        {"id": "rd", "type": "text_read", "file": "r.txt", "save_as": "conteudo"},
+        {"id": "try", "type": "try", "steps": [{"id": "f", "type": "fail", "message": "oops"}],
+         "on_error": [{"id": "le", "type": "set", "variable": "erro", "value": "{{ last_error }}"}]},
+        {"id": "txt", "type": "set", "variable": "cfg", "value": "RPATaskt,Basic abc,Server,srv1,"},
+        {"id": "ex", "type": "set", "variable": "srv", "expr": "cfg | between('Server,', ',')"},
+        {"id": "j", "type": "set", "variable": "nome", "expr": "'{\"a\": {\"customValues\": {\"IPC\": \"PT1\"}}}' | jsonpath('$..IPC')"},
+        {"id": "d", "type": "set", "variable": "ontem", "value": "{{ '2026-03-01' | todate | add_time('days', -1) | date('%Y-%m-%d') }}"},
+        {"id": "m", "type": "set", "variable": "mes", "value": "{{ '2026-01-31' | todate | add_time('months', 1) | date('%Y-%m-%d') }}"},
+        {"id": "obj", "type": "set", "variable": "o", "value": "{{ {'x': 1} }}"},
+        {"id": "pt", "type": "set", "variable": "soma", "expr": "('1.234,50' | num) + 1"},
+    ]
+    eng, _, _ = make_engine(tmp_path, steps)
+    ctx_holder = {}
+    orig = eng.run_steps
+
+    def capture(st, ctx):
+        orig(st, ctx)
+        ctx_holder.update(ctx)
+
+    eng.run_steps = capture
+    res = eng.run()
+    assert res["status"] == "SUCCEEDED", res
+    c = ctx_holder
+    assert c["total"] == 4  # 0,1,3,4 (salta 2, sai em 5)
+    assert c["conteudo"] == "cab\n0\n1\n3\n4\n"
+    assert "oops" in c["erro"] and c["srv"] == "srv1" and c["nome"] == "PT1"
+    assert c["ontem"] == "2026-02-28" and c["mes"] == "2026-02-28"
+    assert c["o"] == '{"x": 1}'  # objetos aparecem em texto como JSON
+    assert c["soma"] == 1235.5

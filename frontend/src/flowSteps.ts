@@ -76,6 +76,7 @@ export const STEP_SPECS: StepSpec[] = [
       { name: "items_expr", label: "Lista (expressão)", kind: "expr", required: true },
       { name: "item_variable", label: "Nome do elemento", kind: "text" },
       { name: "parallel", label: "Em paralelo (1–20)", kind: "number" },
+      { name: "carry", label: "Variáveis que mantêm o valor depois do ciclo (só sem paralelo)", kind: "list" },
       { name: "steps", label: "Passos a repetir", kind: "steps" },
     ],
   },
@@ -120,7 +121,43 @@ export const STEP_SPECS: StepSpec[] = [
     fields: [
       { name: "file", label: "Nome do ficheiro", kind: "template", required: true },
       { name: "content", label: "Conteúdo (modelo)", kind: "textarea", required: true },
+      { name: "append", label: "Acrescentar ao ficheiro (em vez de substituir)", kind: "bool" },
     ],
+  },
+  {
+    type: "text_read",
+    label: "Ler ficheiro",
+    description: "Lê um ficheiro criado antes nesta mesma execução.",
+    defaults: { file: "resultado.txt", save_as: "conteudo" },
+    fields: [
+      { name: "file", label: "Nome do ficheiro", kind: "template", required: true },
+      { name: "save_as", label: "Guardar em", kind: "text", required: true },
+      { name: "missing_ok", label: "Se não existir, fica vazio", kind: "bool" },
+    ],
+  },
+  {
+    type: "try",
+    label: "Tentar / em caso de erro",
+    description: "Executa os passos; se algum falhar, executa os passos de erro (mensagem em last_error).",
+    defaults: { steps: [], on_error: [] },
+    fields: [
+      { name: "steps", label: "Tentar", kind: "steps" },
+      { name: "on_error", label: "Em caso de erro", kind: "steps" },
+    ],
+  },
+  {
+    type: "break",
+    label: "Sair do ciclo",
+    description: "Termina o ciclo 'Para cada elemento' em que está.",
+    defaults: {},
+    fields: [],
+  },
+  {
+    type: "continue",
+    label: "Próximo elemento",
+    description: "Salta para o próximo elemento do ciclo.",
+    defaults: {},
+    fields: [],
   },
   {
     type: "email",

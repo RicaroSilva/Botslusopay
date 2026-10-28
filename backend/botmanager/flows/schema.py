@@ -18,15 +18,17 @@ from jinja2.sandbox import SandboxedEnvironment
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, field_validator, model_validator
 
 NAME_RE = r"^[A-Za-z_][A-Za-z0-9_]{0,63}$"
-MAX_STEPS = 300
-MAX_DEPTH = 6
+MAX_STEPS = 1500
+MAX_DEPTH = 20
 
 _env = SandboxedEnvironment()
 # Filtros, testes e funções do motor (lusopay_worker.flowengine.make_env). Aqui só servem
 # para a validação reconhecer os nomes; a implementação real está no runner.
-ENGINE_FILTERS = ("date", "add_days", "tojson", "fromjson", "money", "decimal", "sample", "find")
+ENGINE_FILTERS = ("date", "add_days", "tojson", "fromjson", "money", "decimal", "sample", "find", "text",
+                  "parsejson", "num", "between", "after", "before", "regex", "jsonpath", "split_text", "add_time",
+                  "todate", "row_values")
 ENGINE_TESTS = ("contains",)
-ENGINE_GLOBALS = ("now", "today", "first_day_of_month")
+ENGINE_GLOBALS = ("now", "today", "first_day_of_month", "taskt_compare", "is_numeric", "file_exists")
 for _n in ENGINE_FILTERS:
     _env.filters[_n] = lambda v, *a, **k: v
 for _n in ENGINE_TESTS:
@@ -193,6 +195,7 @@ class TextWriteStep(_Step):
     type: Literal["text_write"]
     file: str
     content: str
+    append: bool = False  # acrescenta ao ficheiro em vez de o substituir
 
     @field_validator("file")
     @classmethod
@@ -203,6 +206,35 @@ class TextWriteStep(_Step):
         return v
 
     _c = field_validator("content")(lambda cls, v: check_template(v))
+
+
+class TextReadStep(_Step):
+    """Lê um ficheiro produzido anteriormente nesta execução."""
+
+    type: Literal["text_read"]
+    file: str
+    save_as: str = Field(pattern=NAME_RE)
+    missing_ok: bool = False
+
+    @field_validator("file")
+    @classmethod
+    def _file(cls, v: str) -> str:
+        check_template(v)
+        if "/" in v or "\\" in v or ".." in v:
+            raise ValueError("o nome do ficheiro não pode ter pastas")
+        return v
+
+
+class BreakStep(_Step):
+    """Sai do ciclo 'Para cada elemento' em que está."""
+
+    type: Literal["break"]
+
+
+class ContinueStep(_Step):
+    """Passa à próxima iteração do ciclo."""
+
+    type: Literal["continue"]
 
 
 class EmailStep(_Step):
@@ -247,9 +279,28 @@ class ForEachStep(_Step):
     items_expr: str
     item_variable: str = Field(default="item", pattern=NAME_RE)
     parallel: int = Field(default=1, ge=1, le=20)
+    # variáveis alteradas dentro do ciclo que devem manter o valor fora dele (sequencial)
+    carry: list[str] = []
     steps: list["Step"] = Field(min_length=1)
 
+    @model_validator(mode="after")
+    def _carry(self) -> "ForEachStep":
+        if self.carry and self.parallel > 1:
+            raise ValueError("carry só é permitido em ciclos sequenciais (parallel = 1)")
+        for n in self.carry:
+            if not re.match(NAME_RE, n):
+                raise ValueError(f"nome de variável inválido em carry: {n}")
+        return self
+
     _c = field_validator("items_expr")(lambda cls, v: check_expr(v))
+
+
+class TryStep(_Step):
+    """Executa passos; se algum falhar, executa os passos de 'on_error' (erro em last_error)."""
+
+    type: Literal["try"]
+    steps: list["Step"] = Field(min_length=1)
+    on_error: list["Step"] = []
 
 
 class IfStep(_Step):
@@ -264,17 +315,20 @@ class IfStep(_Step):
 Step = Annotated[
     Union[
         HttpRequestStep, SetStep, ExtractStep, AppendStep, LogStep, FailStep, StopStep,
-        CsvWriteStep, TextWriteStep, EmailStep, SqlQueryStep, ForEachStep, IfStep,
+        CsvWriteStep, TextWriteStep, TextReadStep, EmailStep, SqlQueryStep, ForEachStep, IfStep, TryStep,
+        BreakStep, ContinueStep,
     ],
     Field(discriminator="type"),
 ]
 ForEachStep.model_rebuild()
 IfStep.model_rebuild()
+TryStep.model_rebuild()
 
 STEP_TYPES = sorted(
     m.model_fields["type"].annotation.__args__[0]  # type: ignore[union-attr]
     for m in (HttpRequestStep, SetStep, ExtractStep, AppendStep, LogStep, FailStep, StopStep,
-              CsvWriteStep, TextWriteStep, EmailStep, SqlQueryStep, ForEachStep, IfStep)
+              CsvWriteStep, TextWriteStep, TextReadStep, EmailStep, SqlQueryStep, ForEachStep, IfStep, TryStep,
+              BreakStep, ContinueStep)
 )
 
 CREDENTIAL_KINDS_BY_STEP = {
@@ -300,6 +354,9 @@ def iter_steps(steps: list[Any], depth: int = 1):
         elif isinstance(st, IfStep):
             yield from iter_steps(st.then, depth + 1)
             yield from iter_steps(st.otherwise, depth + 1)
+        elif isinstance(st, TryStep):
+            yield from iter_steps(st.steps, depth + 1)
+            yield from iter_steps(st.on_error, depth + 1)
 
 
 def validate_flow(raw: dict[str, Any], credentials: dict[str, str], allowed_hosts: list[str]) -> FlowDefinition:

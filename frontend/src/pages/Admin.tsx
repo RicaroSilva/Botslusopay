@@ -42,7 +42,8 @@ function BotsAdmin() {
           <tbody>
             {(data ?? []).map((b) => (
               <tr key={b.key} className={b.in_registry ? "" : "row-muted"}>
-                <td><strong>{b.name}</strong><br /><code className="small">{b.key}</code>{!b.in_registry && " (removido do registo)"}</td>
+                <td><strong>{b.name}</strong><br /><code className="small">{b.key}</code>
+                  {!b.in_registry && (b.adapter === "flow" ? " (arquivado)" : " (removido do registo)")}</td>
                 <td><AvailabilityBadge value={b.availability} enabled={b.enabled} /></td>
                 <td><RiskBadge level={b.risk_level} /></td>
                 <td><code>{b.adapter}</code></td>
@@ -52,6 +53,11 @@ function BotsAdmin() {
                     onClick={() => run(() => api.patch(`/api/admin/bots/${b.key}`, { enabled: !b.enabled }))}>
                     {b.enabled ? "Desativar" : "Ativar"}
                   </button>
+                  {b.adapter === "flow" && b.in_registry && (
+                    <button className="btn btn-small btn-danger" onClick={() =>
+                      confirm(`Eliminar o fluxo "${b.name}"? Se já tiver execuções, fica arquivado para manter o histórico.`) &&
+                      run(() => api.del(`/api/flows/${b.key}`))}>Eliminar</button>
+                  )}
                   {b.availability !== "unvalidated" && (
                     <select value={b.availability} aria-label="Disponibilidade"
                       onChange={(e) => run(() => api.patch(`/api/admin/bots/${b.key}`, { availability: e.target.value }))}>

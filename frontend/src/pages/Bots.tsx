@@ -42,6 +42,7 @@ export function Bots() {
                 }
               }} />
             </label>
+            <Link className="btn" to="/flows/import-robot">Importar robô (taskt/OpenBots)</Link>
             <Link className="btn btn-primary" to="/flows/new">+ Novo fluxo</Link>
           </div>
         )}

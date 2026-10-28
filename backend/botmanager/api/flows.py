@@ -172,6 +172,72 @@ def import_flow_endpoint(body: FlowImport, user: User = Depends(require_role(Rol
     return {"key": bot.key, "version": version, "created": created, "enabled": bot.enabled}
 
 
+class ConvertIn(BaseModel):
+    filename: str = Field(min_length=1, max_length=300)
+    content_b64: str = Field(max_length=70_000_000)
+    test_email: str = Field(default="", max_length=254)
+
+
+@router.post("/convert")
+def convert_robot(body: ConvertIn, user: User = Depends(require_role(Role.ADMIN)), db: Session = Depends(get_db)):
+    """Converte um robô taskt/OpenBots num fluxo (pré-visualização; não grava nada)."""
+    import base64
+    import binascii
+
+    from ..flows.converters import convert, read_robot
+    from ..flows.converters.readers import RobotFormatError
+    from ..flows.schema import validate_flow
+    from ..models import Credential
+
+    try:
+        data = base64.b64decode(body.content_b64, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise HTTPException(422, "conteúdo inválido") from exc
+    try:
+        result = convert(read_robot(data, body.filename), test_email=body.test_email)
+    except RobotFormatError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    try:  # valida a estrutura assumindo que as credenciais referidas existem
+        validate_flow(result.definition, result.credentials, [])
+        valid, error = True, None
+    except (ValidationError, ValueError) as exc:
+        valid, error = False, str(exc)[:1000]
+    existing = {c.name: c.kind for c in db.scalars(select(Credential))}
+    out = result.as_dict()
+    out["credentials"] = [{"name": n, "kind": k, "exists": existing.get(n) == k} for n, k in result.credentials.items()]
+    out["valid"], out["validation_error"] = valid, error
+    out["key_taken"] = db.scalar(select(Bot.id).where(Bot.key == result.key)) is not None
+    audit(db, "user", user.username, "flow.converted", "file", body.filename[:120], details={"stats": result.stats})
+    db.commit()
+    return out
+
+
+@router.delete("/{key}")
+def delete_flow(key: str, request: Request, user: User = Depends(require_role(Role.ADMIN)), db: Session = Depends(get_db)):
+    """Elimina um fluxo. Com histórico de execuções fica arquivado (escondido), para manter a auditoria."""
+    from ..models import Run
+
+    bot = _flow_bot(db, key)
+    active = db.scalar(select(Run.id).where(Run.bot_id == bot.id, Run.status.in_(["PENDING", "WAITING_APPROVAL", "QUEUED", "RUNNING"])))
+    if active:
+        raise HTTPException(409, "o fluxo tem uma execução em curso")
+    has_runs = db.scalar(select(Run.id).where(Run.bot_id == bot.id).limit(1)) is not None
+    if has_runs:
+        bot.enabled, bot.in_registry = False, False
+        from ..models import TriggerRule
+
+        for r in db.scalars(select(TriggerRule).where(TriggerRule.bot_id == bot.id)):
+            r.enabled = False
+        outcome = "archived"
+    else:
+        db.delete(bot)
+        outcome = "deleted"
+    audit(db, "user", user.username, "flow.deleted", "bot", bot.id, details={"key": key, "result": outcome},
+          ip=client_ip(request))
+    db.commit()
+    return {"result": outcome}
+
+
 @router.get("/{key}")
 def get_flow(key: str, request: Request, version: int | None = None, user: User = Depends(current_user),
              db: Session = Depends(get_db)):

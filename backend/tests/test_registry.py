@@ -71,7 +71,9 @@ def test_parameter_validation():
 def test_real_registry_is_valid():
     from botmanager.config import REPO_ROOT
 
-    res = load_registry([REPO_ROOT / "bots" / "registry", REPO_ROOT / "bots" / "registry-dev"])
+    res = load_registry([REPO_ROOT / "bots" / "registry-taskt", REPO_ROOT / "bots" / "registry-dev"])
+    # a pasta carregada por omissão está vazia: o catálogo começa só com fluxos nativos
+    assert load_registry([REPO_ROOT / "bots" / "registry"]).definitions == []
     assert res.errors == {}
     keys = {d.key for d in res.definitions}
     assert {"taskt-smoke-config", "cyclos-recolher-ids"} <= keys

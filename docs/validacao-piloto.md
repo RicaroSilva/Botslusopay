@@ -44,7 +44,7 @@ ser ajustado à versão instalada.
 ## Passo 2 — Instalar o worker e correr o piloto fase 1
 
 1. Instalar conforme [instalacao-windows.md](instalacao-windows.md), com `WORKER_ADAPTERS=taskt_cli`.
-2. No ficheiro `bots/registry/taskt-smoke-config.yaml`, mudar `validated: true` (por revisão de código; o commit
+2. Com `BM_REGISTRY_DIR` a apontar para `bots/registry-taskt`, no ficheiro `bots/registry-taskt/taskt-smoke-config.yaml`, mudar `validated: true` (por revisão de código; o commit
    documenta a validação feita no passo 1) e, na Administração, carregar em **Recarregar registo** e **Ativar**.
 3. Executar `taskt-smoke-config` pela interface. Resultado esperado: `Concluída`, `runtime_result: Successful` e as
    linhas `[runtime]` do log do taskt visíveis.

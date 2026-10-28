@@ -117,3 +117,37 @@ credenciais antes de importar.
 Testes: `worker/tests/test_migrated_flows.py` corre os três contra uma API Cyclos **simulada**. O formato real das
 respostas do Cyclos tem de ser confirmado na primeira execução: correr em paralelo com o bot antigo e comparar os
 ficheiros.
+
+## Importar robôs do taskt e do OpenBots
+
+**Catálogo → Importar robô (taskt/OpenBots)**. Aceita `.xml` (taskt), `.obscript`/`.json` (OpenBots) ou o projeto
+OpenBots em `.zip` (usa o script principal indicado em `project.obconfig`).
+
+1. Escolher o ficheiro e o **email para testes**. Todos os emails do fluxo vão para esse endereço enquanto a variável
+   `email_teste` tiver valor; deixe-a vazia no fluxo para voltar aos destinatários originais.
+2. **Converter**: mostra quantos comandos foram convertidos, aproximados ou não convertíveis, as credenciais
+   necessárias e o relatório linha a linha. Nada é gravado nesta fase.
+3. Criar as credenciais em falta (Administração → Credenciais, com os nomes indicados) e **Criar fluxo**. O fluxo
+   fica desativado e abre no editor para revisão.
+
+| No robô original | No fluxo |
+|---|---|
+| Variáveis `{vNome}`, `[crLF]`, `{DateTime.Now…}` | modelos `{{ vNome }}`, quebras de linha, `now()` |
+| REST / HTTP Request | pedido HTTP; o cabeçalho Authorization passa a credencial (`cyclos-producao`, `cyclos-dev`…) |
+| Parse JSON / JSON Array / JSON Model | `jsonpath(...)`, `parsejson` (JSONPath com filtros `[?()]` não suportado) |
+| If, Multi If, ciclos, Exit/Next Loop, Try/Catch | condição, ciclo (as variáveis alteradas mantêm o valor, como no taskt), sair/próximo, tentar |
+| Textos (replace, split, extrair entre, regex, substring, maiúsculas) | expressões com filtros equivalentes |
+| Cálculos e datas (formatos .NET como `yyyy-MM-dd`) | `num`, `add_time`, `date` |
+| Escrever/ler ficheiros | ficheiros da execução (descarregáveis); ficheiros de outras pastas do servidor ficam vazios, com aviso no log |
+| SMTP | email com a credencial `smtp-lusopay` (a password do XML não é copiada) |
+| SQL Server | consulta parametrizada com a credencial `sql-magnimeios` (a connection string não é copiada) |
+| Run Task dos scripts de configuração | removido (as credenciais vêm do cofre) |
+| Browser, teclado, rato, janelas, programas, outros sub-robôs, `http://` | passo **Falhar** com a explicação, no sítio exato |
+
+Resultado com os 64 XML enviados: todos convertidos com estrutura válida; 75% dos comandos convertidos diretamente,
+8% aproximados, 7% ignorados (pausas, comentários, configuração) e 10% não convertíveis (quase todos automação de
+browser). **Um fluxo convertido tem sempre de ser revisto e testado** contra o ambiente dev antes de substituir o
+robô original.
+
+O formato do OpenBots foi tratado a partir da estrutura herdada do taskt e **ainda não foi testado com um projeto
+OpenBots real**.

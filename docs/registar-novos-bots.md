@@ -1,6 +1,6 @@
 # Registar um novo bot (sem alterar o backend)
 
-Um bot é registado com **um ficheiro YAML** em `bots/registry/`. O backend lê a pasta no arranque (ou em
+Um bot externo (taskt/OpenBots) é registado com **um ficheiro YAML** em `bots/registry/` (ou na pasta indicada em `BM_REGISTRY_DIR`; os robôs taskt antigos estão em `bots/registry-taskt/`). Para automações novas, prefira os fluxos nativos (`docs/fluxos.md`). O backend lê a pasta no arranque (ou em
 Administração → Recarregar registo, ou `python -m botmanager.cli sync-registry`). O esquema é validado por
 `backend/botmanager/registry/schema.py`: um ficheiro inválido é recusado e o erro aparece na auditoria e no comando
 `validate-registry`.

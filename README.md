@@ -33,7 +33,9 @@ backend/            FastAPI + SQLAlchemy + Alembic (API, regras, scheduler, audi
 worker/             worker: motor de fluxos nativos (runner Docker) e adaptadores taskt / OpenBots (Windows)
 docker/             Dockerfiles e .env de exemplo; docker-compose.yml na raiz
 frontend/           React + TypeScript (Vite)
-bots/registry/      definições YAML dos bots reais (controladas por revisão)
+bots/registry/      registo de bots externos (vazio por omissão)
+bots/registry-taskt/ definições YAML dos robôs taskt antigos (só carregadas com BM_REGISTRY_DIR)
+bots/flows/         fluxos já migrados, prontos a importar
 bots/registry-dev/  bots simulados, só desenvolvimento
 config/             ficheiros de configuração de exemplo (sem segredos)
 tools/inventory/    analisador estático dos XML taskt

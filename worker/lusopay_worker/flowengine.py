@@ -52,6 +52,14 @@ class StopFlow(Exception):
     pass
 
 
+class BreakLoop(Exception):
+    pass
+
+
+class ContinueLoop(Exception):
+    pass
+
+
 def _json_default(o: Any) -> Any:
     if isinstance(o, (datetime, date)):
         return o.isoformat()
@@ -70,8 +78,158 @@ def _to_date(v: Any) -> datetime:
     return datetime.fromisoformat(str(v))
 
 
+def _finalize(v: Any) -> Any:
+    """Objetos aparecem em texto como JSON (como no taskt), nunca como repr do Python."""
+    if v is None:
+        return ""
+    if isinstance(v, (dict, list)):
+        return json.dumps(v, ensure_ascii=False, default=_json_default)
+    return v
+
+
+def to_text(v: Any) -> str:
+    return str(_finalize(v))
+
+
+def parse_json(v: Any) -> Any:
+    if isinstance(v, (bytes, str)):
+        t = v.decode() if isinstance(v, bytes) else v
+        return json.loads(t) if t.strip() else None
+    return v
+
+
+def to_num(v: Any) -> Any:
+    if isinstance(v, bool):
+        return int(v)
+    if isinstance(v, (int, float, Decimal)):
+        n = float(v)
+    else:
+        t = str(v).strip().replace(" ", "")
+        if t == "":
+            return 0
+        try:
+            n = float(t)
+        except ValueError:
+            # formato português: 1.234,56
+            n = float(t.replace(".", "").replace(",", "."))
+    return int(n) if n.is_integer() else n
+
+
+def _nth_index(text: str, sub: str, skip: int) -> int:
+    idx = -1
+    for _ in range(int(skip) + 1):
+        idx = text.find(sub, idx + 1)
+        if idx < 0:
+            return -1
+    return idx
+
+
+def text_between(v: Any, lead: str, trail: str, skip: int = 0) -> str:
+    t = to_text(v)
+    i = _nth_index(t, lead, skip)
+    if i < 0:
+        return ""
+    start = i + len(lead)
+    j = t.find(trail, start) if trail else len(t)
+    return t[start:] if j < 0 else t[start:j]
+
+
+def text_after(v: Any, lead: str, skip: int = 0) -> str:
+    t = to_text(v)
+    i = _nth_index(t, lead, skip)
+    return "" if i < 0 else t[i + len(lead):]
+
+
+def text_before(v: Any, trail: str, skip: int = 0) -> str:
+    t = to_text(v)
+    i = _nth_index(t, trail, skip)
+    return t if i < 0 else t[:i]
+
+
+def regex_find(v: Any, pattern: str, group: int = 0) -> str:
+    m = re.search(pattern, to_text(v))
+    if not m:
+        return ""
+    return m.group(int(group or 0)) or ""
+
+
+def jsonpath(v: Any, path: str) -> Any:
+    """JSONPath simples: $.a.b, $..chave, a[0].b, items[*].id. Filtros [?(...)] não são suportados."""
+    data = parse_json(v)
+    path = path.strip()
+    if "[?" in path:
+        raise ValueError(f"JSONPath com filtro não suportado: {path}")
+    if path.startswith("$.."):
+        rest = path[3:]
+        key, _, tail = rest.partition(".")
+        found = find_key(data, key)
+        return extract_path(found, tail) if tail else found
+    return extract_path(data, path)
+
+
+def split_text(v: Any, sep: str) -> list[str]:
+    t = to_text(v).replace("\r\n", "\n")
+    return t.split(sep.replace("\r\n", "\n"))
+
+
+def add_time(v: Any, unit: str, n: Any) -> datetime:
+    d = _to_date(v)
+    n = to_num(n)
+    unit = unit.lower()
+    if unit.startswith("second"):
+        return d + timedelta(seconds=n)
+    if unit.startswith("minute"):
+        return d + timedelta(minutes=n)
+    if unit.startswith("hour"):
+        return d + timedelta(hours=n)
+    if unit.startswith("day"):
+        return d + timedelta(days=n)
+    if unit.startswith("month") or unit.startswith("year"):
+        months = int(n) * (12 if unit.startswith("year") else 1)
+        m = d.month - 1 + months
+        y, m = d.year + m // 12, m % 12 + 1
+        import calendar
+
+        return d.replace(year=y, month=m, day=min(d.day, calendar.monthrange(y, m)[1]))
+    raise ValueError(f"unidade de tempo desconhecida: {unit}")
+
+
+def taskt_compare(a: Any, op: str, b: Any, case_sensitive: bool = False, mode: str = "text") -> bool:
+    """Comparações com a semântica do 'Begin If' do taskt/OpenBots."""
+    op = op.strip().lower()
+    if mode == "date":
+        x, y = _to_date(to_text(a).strip()), _to_date(to_text(b).strip())
+    else:
+        x, y = to_text(a), to_text(b)
+        if op in ("contains", "does not contain", "is equal to", "is not equal to") and not case_sensitive:
+            x, y = x.lower(), y.lower()
+        if op in ("is greater than", "is greater than or equal to", "is less than", "is less than or equal to"):
+            x, y = to_num(x), to_num(y)
+        elif op in ("is equal to", "is not equal to") and is_numeric(x) and is_numeric(y):
+            x, y = to_num(x), to_num(y)
+    return {
+        "is equal to": lambda: x == y,
+        "is not equal to": lambda: x != y,
+        "is greater than": lambda: x > y,
+        "is greater than or equal to": lambda: x >= y,
+        "is less than": lambda: x < y,
+        "is less than or equal to": lambda: x <= y,
+        "contains": lambda: y in x,
+        "does not contain": lambda: y not in x,
+    }[op]()
+
+
+def is_numeric(v: Any) -> bool:
+    try:
+        float(to_text(v).strip().replace(",", "."))
+        return to_text(v).strip() != ""
+    except ValueError:
+        return False
+
+
 def make_env() -> SandboxedEnvironment:
-    env = SandboxedEnvironment(undefined=StrictUndefined, autoescape=False, keep_trailing_newline=True)
+    env = SandboxedEnvironment(undefined=StrictUndefined, autoescape=False, keep_trailing_newline=True,
+                               finalize=_finalize)
     env.filters["date"] = lambda v, fmt="%Y-%m-%d": _to_date(v).strftime(fmt)
     env.filters["add_days"] = lambda v, n: _to_date(v) + timedelta(days=int(n))
     env.filters["tojson"] = lambda v: json.dumps(v, ensure_ascii=False, default=_json_default)
@@ -80,7 +238,22 @@ def make_env() -> SandboxedEnvironment:
     env.filters["decimal"] = lambda v, n=2: f"{float(v):.{int(n)}f}".replace(".", ",")
     env.filters["sample"] = lambda v, n: random.sample(list(v), min(int(n), len(v)))
     env.filters["find"] = find_key
+    env.filters["text"] = to_text
+    env.filters["parsejson"] = parse_json
+    env.filters["num"] = to_num
+    env.filters["between"] = text_between
+    env.filters["after"] = text_after
+    env.filters["before"] = text_before
+    env.filters["regex"] = regex_find
+    env.filters["jsonpath"] = jsonpath
+    env.filters["split_text"] = split_text
+    env.filters["add_time"] = add_time
+    env.filters["todate"] = _to_date
+    env.filters["row_values"] = lambda v: list(v.values()) if isinstance(v, dict) else list(v)
     env.tests["contains"] = lambda v, sub: sub in v
+    env.globals["taskt_compare"] = taskt_compare
+    env.globals["is_numeric"] = is_numeric
+    env.globals["file_exists"] = lambda name: False  # substituído por instância (ficheiros desta execução)
     env.globals["now"] = lambda: datetime.now()
     env.globals["today"] = lambda: datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     env.globals["first_day_of_month"] = lambda offset=0: _month_start(offset)
@@ -150,6 +323,7 @@ class Engine:
         self.out_dir = out_dir
         self._emit = emit
         self.env = make_env()
+        self.env.globals["file_exists"] = lambda name: (self.out_dir / str(name)).is_file()
         self.http = http_client or httpx.Client(follow_redirects=False, timeout=30,
                                                 limits=httpx.Limits(max_connections=40))
         self.smtp_factory = smtp_factory
@@ -222,7 +396,7 @@ class Engine:
             raise FlowError(sid, f"tipo de passo desconhecido: {step['type']}")
         try:
             handler(step, ctx)
-        except (StopFlow, FlowError):
+        except (StopFlow, FlowError, BreakLoop, ContinueLoop):
             raise
         except Exception as exc:  # noqa: BLE001 - convertido em falha do passo
             msg = f"{type(exc).__name__}: {exc}"
@@ -259,6 +433,30 @@ class Engine:
         self.log(f"[{s['id']}] fim antecipado: {msg}")
         raise StopFlow(msg)
 
+    def step_break(self, s, ctx):
+        raise BreakLoop()
+
+    def step_continue(self, s, ctx):
+        raise ContinueLoop()
+
+    def step_try(self, s, ctx):
+        try:
+            self.run_steps(s.get("steps", []), ctx)
+        except FlowError as exc:
+            ctx["last_error"] = str(exc)
+            self.log(f"[{s['id']}] erro tratado: {exc}", "WARNING")
+            self.run_steps(s.get("on_error", []), ctx)
+
+    def step_text_read(self, s, ctx):
+        name = self.render(s["file"], ctx)
+        path = self._out_path(name)
+        if not path.is_file():
+            if s.get("missing_ok"):
+                ctx[s["save_as"]] = ""
+                return
+            raise ValueError(f"ficheiro {name} não existe nesta execução")
+        ctx[s["save_as"]] = path.read_text(encoding="utf-8-sig")
+
     def step_if(self, s, ctx):
         branch = s.get("then", []) if self.evaluate(s["condition"], ctx) else s.get("otherwise", [])
         self.run_steps(branch, ctx)
@@ -267,6 +465,8 @@ class Engine:
         items = self.evaluate(s["items_expr"], ctx)
         if items is None:
             items = []
+        if isinstance(items, range):
+            items = list(items)
         if not isinstance(items, (list, tuple)):
             raise ValueError("items_expr não devolveu uma lista")
         var, par = s.get("item_variable", "item"), int(s.get("parallel", 1))
@@ -275,11 +475,22 @@ class Engine:
         def one(i: int, item: Any) -> None:
             local = dict(ctx)  # variáveis definidas dentro da iteração são locais
             local[var], local["loop_index"] = item, i
-            self.run_steps(s["steps"], local)
+            try:
+                self.run_steps(s["steps"], local)
+            except ContinueLoop:
+                pass
+            finally:
+                # variáveis que passam para as iterações seguintes e para depois do ciclo (semântica do taskt)
+                for name in s.get("carry") or []:
+                    if name in local:
+                        ctx[name] = local[name]
 
         if par <= 1:
             for i, item in enumerate(items):
-                one(i, item)
+                try:
+                    one(i, item)
+                except BreakLoop:
+                    break
             return
         with ThreadPoolExecutor(max_workers=par) as pool:
             futures = [pool.submit(one, i, it) for i, it in enumerate(items)]
@@ -375,9 +586,14 @@ class Engine:
 
     def step_text_write(self, s, ctx):
         name = self.render(s["file"], ctx)
-        self._out_path(name).write_text(self.render(s["content"], ctx), encoding="utf-8")
+        content = self.render(s["content"], ctx)
+        path = self._out_path(name)
+        with self.lock:
+            with path.open("a" if s.get("append") else "w", encoding="utf-8") as fh:
+                fh.write(content)
         self._register_file(name)
-        self.log(f"[{s['id']}] ficheiro {name} criado")
+        if not s.get("append"):
+            self.log(f"[{s['id']}] ficheiro {name} criado")
 
     def step_email(self, s, ctx):
         c = self._cred(s["credential"], {"smtp"})

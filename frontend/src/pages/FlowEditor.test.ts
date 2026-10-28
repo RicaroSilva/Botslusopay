@@ -9,5 +9,7 @@ test("clean remove campos opcionais vazios e mantém passos aninhados", () => {
     ] },
   ]);
   expect(out[0]).toEqual({ id: "a", type: "http_request", method: "GET", url: "https://x.pt", save_as: "r", expect_status: [200] });
+  expect(clean([{ id: "f", type: "foreach", items_expr: "x", carry: ["total"], steps: [] }])[0].carry).toEqual(["total"]);
+  expect(clean([{ id: "z", type: "set", variable: "v", value: "1", campo_novo: 5 }])[0].campo_novo).toBe(5);
   expect(out[1].steps).toEqual([{ id: "c", type: "email", credential: "smtp", to: ["a@b.pt"], subject: "s", body: "b" }]);
 });
