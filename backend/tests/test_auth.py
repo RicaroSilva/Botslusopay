@@ -67,3 +67,25 @@ def test_deactivated_user_loses_access(env, clients):
 def test_tampered_token_rejected(env):
     c = TestClient(env["app"], cookies={"bm_session": "eyJhbGciOiJub25lIn0.eyJzdWIiOiJ4In0."})
     assert c.get("/api/auth/me").status_code == 401
+
+
+def test_cli_reset_password_unlocks(env, monkeypatch):
+    from datetime import timedelta
+
+    from botmanager import cli
+    from botmanager.models import User, utcnow
+
+    db = env["db"]
+    u = db.query(User).filter_by(username="admin").one()
+    u.locked_until, u.failed_logins = utcnow() + timedelta(minutes=15), 3
+    db.commit()
+    answers = iter(["nova-password-segura-1", "nova-password-segura-1"])
+    monkeypatch.setattr(cli.getpass, "getpass", lambda prompt="": next(answers))
+    assert cli.main(["reset-password", "--username", "Admin"]) == 0
+    db.expire_all()
+    u = db.query(User).filter_by(username="admin").one()
+    assert u.locked_until is None and u.failed_logins == 0
+    from fastapi.testclient import TestClient
+
+    c = TestClient(env["app"])
+    assert c.post("/api/auth/login", json={"username": "admin", "password": "nova-password-segura-1"}).status_code == 200

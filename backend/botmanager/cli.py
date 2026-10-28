@@ -5,6 +5,7 @@
   python -m botmanager.cli create-worker --name BOTSERVER1 --capabilities taskt_cli
   python -m botmanager.cli validate-registry
   python -m botmanager.cli import-flows [ficheiro.json ...]
+  python -m botmanager.cli reset-password --username admin
 """
 from __future__ import annotations
 
@@ -31,6 +32,8 @@ def main(argv: list[str] | None = None) -> int:
     cu.add_argument("--username", required=True)
     cu.add_argument("--role", choices=[r.value for r in Role], default="viewer")
     cu.add_argument("--display-name", default="")
+    rp = sub.add_parser("reset-password", help="desbloqueia um utilizador e, opcionalmente, muda a password")
+    rp.add_argument("--username", required=True)
     imp = sub.add_parser("import-flows", help="importa fluxos de bots/flows/*.json (ou ficheiros indicados)")
     imp.add_argument("files", nargs="*")
     imp.add_argument("--as-user", default="admin", help="utilizador registado como autor da versão")
@@ -71,6 +74,28 @@ def main(argv: list[str] | None = None) -> int:
             audit(db, "system", "cli", "user.created", "user", u.id, details={"username": username, "role": args.role})
             db.commit()
             print(f"utilizador {username} criado ({args.role})")
+            return 0
+        if args.cmd == "reset-password":
+            u = db.scalar(select(User).where(User.username == args.username.strip().lower()))
+            if u is None:
+                print("utilizador não existe; utilizadores: "
+                      + ", ".join(db.scalars(select(User.username))), file=sys.stderr)
+                return 1
+            pw = getpass.getpass("Nova password (Enter = manter a atual e só desbloquear): ")
+            if pw:
+                if len(pw) < 12:
+                    print("a password tem de ter pelo menos 12 caracteres", file=sys.stderr)
+                    return 1
+                if pw != getpass.getpass("Repetir password: "):
+                    print("as passwords não coincidem", file=sys.stderr)
+                    return 1
+                u.password_hash = hash_password(pw)
+            u.failed_logins, u.locked_until = 0, None
+            u.is_active = True
+            audit(db, "system", "cli", "user.password_reset" if pw else "user.unlocked", "user", u.id,
+                  details={"username": u.username})
+            db.commit()
+            print(f"{u.username} desbloqueado" + (" e password alterada" if pw else ""))
             return 0
         if args.cmd == "import-flows":
             import json
