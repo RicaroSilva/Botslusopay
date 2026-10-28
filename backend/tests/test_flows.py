@@ -280,3 +280,18 @@ def test_persistent_files_lifecycle(env, clients):
     assert row["updated_by"] == f"run:{rid}" and row["has_previous"] is True
     assert a.get(url).content == b"250" and a.get(url, params={"previous": True}).content == b"100"
     assert a.delete(url).status_code == 200 and a.get(url).status_code == 404
+
+
+def test_admin_can_waive_approval_on_high_risk_flow(env, clients):
+    a = clients["admin"]
+    body = {"key": "fluxo-risco", "name": "Fluxo de risco", "risk_level": "high",
+            "definition": {"steps": [{"id": "l", "type": "log", "message": "x"}]}}
+    assert a.post("/api/flows", json=body).json()["requires_approval"] is True
+    meta = {k: v for k, v in body.items() if k not in ("key", "definition")}
+    r = a.patch("/api/flows/fluxo-risco", json={**meta, "requires_approval": False})
+    assert r.status_code == 200 and r.json()["requires_approval"] is False
+    a.patch("/api/admin/bots/fluxo-risco", json={"enabled": True})
+    assert run_bot(clients["operator"], "fluxo-risco").json()["status"] != "WAITING_APPROVAL"
+    assert a.get("/api/admin/audit", params={"action": "flow.meta_updated"}).json()
+    # sem indicar, risco elevado continua a exigir aprovação
+    assert a.patch("/api/flows/fluxo-risco", json=meta).json()["requires_approval"] is True

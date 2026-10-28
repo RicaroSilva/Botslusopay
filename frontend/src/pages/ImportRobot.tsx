@@ -55,7 +55,7 @@ export function ImportRobot() {
     const problems = conv.report.filter((r) => r.level === "nao_convertivel" || r.level === "aproximado");
     try {
       await api.post("/api/flows/import", {
-        key, name, category: "Importado", risk_level: conv.risk_level, timeout_seconds: 7200,
+        key, name, category: "Importado", risk_level: conv.risk_level, requires_approval: conv.risk_level === "high", timeout_seconds: 7200,
         description: `Convertido automaticamente de ${file?.name} (${conv.source_format}). Rever antes de usar.`,
         source_bot: file?.name ?? "", definition: conv.definition,
         migration_notes: [

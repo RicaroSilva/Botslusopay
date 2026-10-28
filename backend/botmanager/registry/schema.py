@@ -178,7 +178,8 @@ class BotDefinition(BaseModel):
             raise ValueError(
                 f"o adaptador {self.execution.adapter} não suporta parâmetros de entrada (confirmado no código do taskt)"
             )
-        if self.risk_level == "high" and not self.requires_approval:
+        # fluxos nativos: um administrador pode dispensar a aprovação (decisão auditada, ver api/flows.py)
+        if self.risk_level == "high" and not self.requires_approval and self.execution.adapter != "flow":
             raise ValueError("bots de risco elevado têm de ter requires_approval: true")
         if (self.execution.adapter == "flow") != (self.success_detection.method == "flow"):
             raise ValueError("fluxos nativos usam success_detection.method=flow (e só eles)")

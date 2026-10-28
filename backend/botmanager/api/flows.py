@@ -28,7 +28,7 @@ class FlowMeta(BaseModel):
     risk_level: Literal["low", "medium", "high"] = "medium"
     timeout_seconds: int = Field(default=1800, ge=30, le=86400)
     triggers_allowed: list[str] = ["manual"]
-    requires_approval: bool = False
+    requires_approval: bool | None = None  # None = exigir em risco elevado
     concurrency: Literal["single", "parallel"] = "single"
     external_effects: list[str] = []
     prerequisites: list[str] = []
@@ -47,7 +47,8 @@ class FlowSave(BaseModel):
 
 def _bot_definition(key: str, meta: FlowMeta) -> BotDefinition:
     perms = {"view": ["viewer", "operator", "approver"], "execute": ["operator"]}
-    if meta.risk_level == "high" or meta.requires_approval:
+    requires_approval = meta.requires_approval if meta.requires_approval is not None else meta.risk_level == "high"
+    if meta.risk_level == "high" or requires_approval:
         perms["approve"] = ["approver"]
     return BotDefinition.model_validate({
         "key": key, "name": meta.name, "description": meta.description, "category": meta.category,
@@ -57,7 +58,7 @@ def _bot_definition(key: str, meta: FlowMeta) -> BotDefinition:
         "concurrency": {"policy": meta.concurrency, "exclusive_resources": []},
         "timeout_seconds": meta.timeout_seconds, "success_detection": {"method": "flow"},
         "triggers_allowed": meta.triggers_allowed,
-        "requires_approval": meta.requires_approval or meta.risk_level == "high",
+        "requires_approval": requires_approval,
         "permissions": perms,
     })
 
@@ -126,7 +127,7 @@ class FlowImport(BaseModel):
     risk_level: Literal["low", "medium", "high"] = "medium"
     timeout_seconds: int = 1800
     triggers_allowed: list[str] = ["manual"]
-    requires_approval: bool = False
+    requires_approval: bool | None = None  # None = exigir em risco elevado
     concurrency: Literal["single", "parallel"] = "single"
     external_effects: list[str] = []
     prerequisites: list[str] = []
@@ -404,6 +405,8 @@ def update_meta(key: str, body: FlowMeta, request: Request, user: User = Depends
                 db: Session = Depends(get_db)):
     bot = _flow_bot(db, key)
     ensure_bot_permission(db, user, bot, Permission.CONFIGURE, request)
+    if body.risk_level == "high" and body.requires_approval is False and user.role != Role.ADMIN:
+        raise HTTPException(403, "só um administrador pode dispensar a aprovação de um fluxo de risco elevado")
     try:
         defn = _bot_definition(bot.key, body)
     except ValidationError as exc:

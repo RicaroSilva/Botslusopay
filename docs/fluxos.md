@@ -4,7 +4,8 @@ Os fluxos nativos são executados pelo próprio Bot Manager, no contentor **runn
 desktop Windows. São criados e editados na aplicação: **Catálogo → + Novo fluxo** (administradores) ou
 **Detalhe do bot → Editar fluxo** (quem tem a permissão *configure* no bot).
 
-Tudo o que já existia continua a aplicar-se: botão Executar, aprovações (obrigatórias em risco elevado),
+Tudo o que já existia continua a aplicar-se: botão Executar, aprovações (marcadas por omissão em risco elevado; só um
+administrador as pode dispensar, e fica auditado),
 agendamentos e outras regras, dependências, histórico, logs e auditoria.
 
 ## Porque é mais rápido

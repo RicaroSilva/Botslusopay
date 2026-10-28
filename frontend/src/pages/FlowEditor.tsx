@@ -20,7 +20,7 @@ interface FlowData {
 
 const EMPTY_META = {
   key: "", name: "", description: "", category: "", risk_level: "low", timeout_seconds: 1800,
-  triggers_allowed: ["manual"], requires_approval: false, concurrency: "single",
+  triggers_allowed: ["manual"], requires_approval: false as boolean, concurrency: "single",
   external_effects: [] as string[], prerequisites: [] as string[],
 };
 
@@ -352,10 +352,14 @@ export function FlowEditor() {
         <Card title="Execução e controlo">
           <div className="form-grid">
             <label>Risco
-              <select value={meta.risk_level} onChange={(e) => setMeta({ ...meta, risk_level: e.target.value })}>
+              <select value={meta.risk_level} onChange={(e) => setMeta({
+                ...meta, risk_level: e.target.value,
+                // ao passar a risco elevado, a aprovação fica marcada (o administrador pode desmarcar)
+                requires_approval: e.target.value === "high" && meta.risk_level !== "high" ? true : meta.requires_approval,
+              })}>
                 <option value="low">Baixo (só leitura)</option>
                 <option value="medium">Médio (relatórios, emails)</option>
-                <option value="high">Elevado (altera dados) — exige aprovação</option>
+                <option value="high">Elevado (altera dados)</option>
               </select>
             </label>
             <label>Timeout (minutos)<input type="number" min={1} value={Math.round(meta.timeout_seconds / 60)}
@@ -366,9 +370,14 @@ export function FlowEditor() {
                 <option value="parallel">Permitir várias em simultâneo</option>
               </select>
             </label>
-            <label className="check"><input type="checkbox" checked={meta.requires_approval || meta.risk_level === "high"}
-              disabled={meta.risk_level === "high"} onChange={(e) => setMeta({ ...meta, requires_approval: e.target.checked })} />
+            <label className="check"><input type="checkbox" checked={meta.requires_approval}
+              disabled={meta.risk_level === "high" && !hasRole(user, "admin")}
+              onChange={(e) => setMeta({ ...meta, requires_approval: e.target.checked })} />
               Exigir aprovação</label>
+            {meta.risk_level === "high" && !meta.requires_approval && (
+              <p className="alert alert-warn span-2">Fluxo de risco elevado sem aprovação: qualquer operador com
+                permissão de execução o pode correr de imediato. Fica registado na auditoria.</p>
+            )}
             <fieldset className="span-2">
               <legend>Disparos permitidos</legend>
               {["manual", "schedule", "webhook", "after_bot", "poll_http"].map((t) => (
