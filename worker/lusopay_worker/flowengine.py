@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import csv
 import json
+import random
 import re
 import smtplib
 import ssl
@@ -76,6 +77,10 @@ def make_env() -> SandboxedEnvironment:
     env.filters["tojson"] = lambda v: json.dumps(v, ensure_ascii=False, default=_json_default)
     env.filters["fromjson"] = lambda v: json.loads(v)
     env.filters["money"] = lambda v: f"{float(v):.2f}".replace(".", ",")
+    env.filters["decimal"] = lambda v, n=2: f"{float(v):.{int(n)}f}".replace(".", ",")
+    env.filters["sample"] = lambda v, n: random.sample(list(v), min(int(n), len(v)))
+    env.filters["find"] = find_key
+    env.tests["contains"] = lambda v, sub: sub in v
     env.globals["now"] = lambda: datetime.now()
     env.globals["today"] = lambda: datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     env.globals["first_day_of_month"] = lambda offset=0: _month_start(offset)
@@ -86,6 +91,23 @@ def _month_start(offset: int) -> datetime:
     d = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     m = d.month - 1 + int(offset)
     return d.replace(year=d.year + m // 12, month=m % 12 + 1)
+
+
+def find_key(data: Any, key: str) -> Any:
+    """Procura recursiva do primeiro valor de `key` (equivalente a $..key)."""
+    if isinstance(data, dict):
+        if key in data:
+            return data[key]
+        values = data.values()
+    elif isinstance(data, list):
+        values = data
+    else:
+        return None
+    for v in values:
+        found = find_key(v, key)
+        if found is not None:
+            return found
+    return None
 
 
 def extract_path(data: Any, path: str) -> Any:
@@ -287,8 +309,9 @@ class Engine:
                 headers["Authorization"] = f"Bearer {c['token']}"
             else:
                 headers[c["header_name"]] = c["value"]
-        kwargs: dict[str, Any] = {"headers": headers, "params": params or None, "auth": auth,
-                                  "timeout": s.get("timeout_seconds", 30)}
+        if params:  # junta aos parâmetros que já estejam no URL (ex.: fields=a&fields=b), sem os substituir
+            url = str(httpx.URL(url).copy_merge_params(params))
+        kwargs: dict[str, Any] = {"headers": headers, "auth": auth, "timeout": s.get("timeout_seconds", 30)}
         if s.get("body_json_expr"):
             kwargs["content"] = json.dumps(self.evaluate(s["body_json_expr"], ctx), default=_json_default)
             headers.setdefault("Content-Type", "application/json")
@@ -358,8 +381,12 @@ class Engine:
 
     def step_email(self, s, ctx):
         c = self._cred(s["credential"], {"smtp"})
-        to = [self.render(x, ctx).strip() for x in s["to"]]
-        cc = [self.render(x, ctx).strip() for x in s.get("cc", [])]
+        def addresses(items):  # cada entrada pode ter vários endereços separados por , ou ;
+            return [a.strip() for x in items for a in re.split(r"[,;]", self.render(x, ctx)) if a.strip()]
+
+        to, cc = addresses(s["to"]), addresses(s.get("cc", []))
+        if not to:
+            raise ValueError("email sem destinatários")
         for addr in to + cc:
             if not EMAIL_RE.match(addr):
                 raise ValueError(f"endereço de email inválido: {addr!r}")

@@ -1,0 +1,342 @@
+{
+  "key": "desempenho-fraudes-nativo",
+  "name": "Análise de desempenho, operações e fraudes (fluxo nativo)",
+  "category": "Compliance",
+  "risk_level": "medium",
+  "timeout_seconds": 1800,
+  "triggers_allowed": [
+    "manual",
+    "schedule"
+  ],
+  "description": "Conta transações por meio de pagamento e fraudes/eventuais fraudes do mês anterior, calcula a proporção e envia o CSV por email. Substitui o bot taskt 'OK Análise de desempenho, operações e fraudes nas transações LUSOPAY' (no orquestrador corria no dia 14).",
+  "external_effects": [
+    "GET à API Cyclos produtiva (8 pedidos)",
+    "Email com o relatório"
+  ],
+  "prerequisites": [
+    "Credencial 'cyclos-producao' (API Basic)",
+    "Credencial 'smtp-lusopay' (SMTP)"
+  ],
+  "source_bot": "OK Análise de desempenho, operações e fraudes nas transações LUSOPAY.xml",
+  "migration_notes": [
+    "Destinatários originais: compliance@lusopay.com, jar@lusopay.com. Para testar vem ricardosilva@lusopay.com na variável 'destinatarios'.",
+    "Período igual ao original quando corre no dia 14: do 1.º dia do mês anterior ao 1.º dia do mês atual.",
+    "Classificação por meio/canal mantém a regra do original: procura de texto, sem distinguir maiúsculas, em cada registo (ex.: 'DD', 'TPA'). Isto pode contar registos a mais; confirmar com compliance.",
+    "Diferença: o original contava registos dividindo o JSON por '},' (podia dar números errados com objetos aninhados); aqui conta-se o número real de registos. Os totais podem diferir do bot antigo — é o que a comparação em paralelo deve confirmar.",
+    "A 'percentagem' é a proporção (fraudes ÷ transações), com 4 casas decimais e vírgula, como no cálculo original (não multiplicada por 100)."
+  ],
+  "definition": {
+    "description": "Desempenho, operações e fraudes do mês anterior",
+    "variables": {
+      "destinatarios": "ricardosilva@lusopay.com"
+    },
+    "steps": [
+      {
+        "id": "inicio",
+        "name": "Data de início (1.º dia do mês anterior)",
+        "type": "set",
+        "variable": "inicio",
+        "value": "{{ first_day_of_month(-1) | date('%Y-%m-%d') }}"
+      },
+      {
+        "id": "fim",
+        "name": "Data de fim (1.º dia do mês atual)",
+        "type": "set",
+        "variable": "fim",
+        "value": "{{ first_day_of_month(0) | date('%Y-%m-%d') }}"
+      },
+      {
+        "id": "eventuais",
+        "name": "Registos de eventuais fraudes",
+        "type": "http_request",
+        "url": "https://app.lusopay.com:8443/web/api/general-records/RegistoEventualFraude?fields=customValues.Situacao&fields=customValues.MeioPagamento&fields=customValues.Valor&fields=customValues.Canal",
+        "query": {
+          "creationPeriod": "{{ inicio }},{{ fim }}"
+        },
+        "headers": {
+          "accept": "application/json"
+        },
+        "credential": "cyclos-producao",
+        "save_as": "eventuais",
+        "retries": 2
+      },
+      {
+        "id": "fraudes",
+        "name": "Registos de fraudes",
+        "type": "http_request",
+        "url": "https://app.lusopay.com:8443/web/api/general-records/RegistoFraudes?fields=customValues.status&fields=customValues.MeioPagamento&fields=customValues.amount",
+        "query": {
+          "creationPeriod": "{{ inicio }},{{ fim }}"
+        },
+        "headers": {
+          "accept": "application/json"
+        },
+        "credential": "cyclos-producao",
+        "save_as": "fraudes",
+        "retries": 2
+      },
+      {
+        "id": "ev_txt",
+        "name": "Texto dos registos (para pesquisa, como no original)",
+        "type": "set",
+        "variable": "ev_txt",
+        "expr": "eventuais | map('tojson') | map('lower') | list"
+      },
+      {
+        "id": "fr_txt",
+        "type": "set",
+        "variable": "fr_txt",
+        "expr": "fraudes | map('tojson') | map('lower') | list"
+      },
+      {
+        "id": "tr_mb",
+        "name": "N.º de transações Referências multibanco",
+        "type": "http_request",
+        "url": "https://app.lusopay.com:8443/web/api/transfers?fields=id",
+        "query": {
+          "chargedBack": "false",
+          "datePeriod": "{{ inicio }},{{ fim }}",
+          "pageSize": "99999",
+          "transferTypes": "BancoEuro.CarMB1,BancoEuro.PagMB1"
+        },
+        "headers": {
+          "accept": "application/json"
+        },
+        "credential": "cyclos-producao",
+        "save_as": "tr_mb",
+        "retries": 2
+      },
+      {
+        "id": "n_mb",
+        "name": "Fraudes + eventuais fraudes Referências multibanco",
+        "type": "set",
+        "variable": "f_mb",
+        "expr": "(ev_txt | select('contains', 'referenciamultibanco') | list | length) + (fr_txt | select('contains', 'referenciamultibanco') | list | length)"
+      },
+      {
+        "id": "p_mb",
+        "type": "set",
+        "variable": "p_mb",
+        "value": "{{ ((f_mb / (tr_mb | length)) if (tr_mb | length) else 0) | decimal(4) }}"
+      },
+      {
+        "id": "tr_payshop",
+        "name": "N.º de transações Referências Payshop",
+        "type": "http_request",
+        "url": "https://app.lusopay.com:8443/web/api/transfers?fields=id",
+        "query": {
+          "chargedBack": "false",
+          "datePeriod": "{{ inicio }},{{ fim }}",
+          "pageSize": "99999",
+          "transferTypes": "BancoEuro.CarPS1,BancoEuro.PagPS1"
+        },
+        "headers": {
+          "accept": "application/json"
+        },
+        "credential": "cyclos-producao",
+        "save_as": "tr_payshop",
+        "retries": 2
+      },
+      {
+        "id": "n_payshop",
+        "name": "Fraudes + eventuais fraudes Referências Payshop",
+        "type": "set",
+        "variable": "f_payshop",
+        "expr": "(ev_txt | select('contains', 'referenciapayshop') | list | length) + (fr_txt | select('contains', 'referenciapayshop') | list | length)"
+      },
+      {
+        "id": "p_payshop",
+        "type": "set",
+        "variable": "p_payshop",
+        "value": "{{ ((f_payshop / (tr_payshop | length)) if (tr_payshop | length) else 0) | decimal(4) }}"
+      },
+      {
+        "id": "tr_mbway",
+        "name": "N.º de transações MB Way",
+        "type": "http_request",
+        "url": "https://app.lusopay.com:8443/web/api/transfers?fields=id",
+        "query": {
+          "chargedBack": "false",
+          "datePeriod": "{{ inicio }},{{ fim }}",
+          "pageSize": "99999",
+          "transferTypes": "BancoEuro.pagamentombway"
+        },
+        "headers": {
+          "accept": "application/json"
+        },
+        "credential": "cyclos-producao",
+        "save_as": "tr_mbway",
+        "retries": 2
+      },
+      {
+        "id": "n_mbway",
+        "name": "Fraudes + eventuais fraudes MB Way",
+        "type": "set",
+        "variable": "f_mbway",
+        "expr": "(ev_txt | select('contains', 'mbway') | list | length) + (fr_txt | select('contains', 'mbway') | list | length)"
+      },
+      {
+        "id": "p_mbway",
+        "type": "set",
+        "variable": "p_mbway",
+        "value": "{{ ((f_mbway / (tr_mbway | length)) if (tr_mbway | length) else 0) | decimal(4) }}"
+      },
+      {
+        "id": "tr_dd",
+        "name": "N.º de transações Debito direto",
+        "type": "http_request",
+        "url": "https://app.lusopay.com:8443/web/api/transfers?fields=id",
+        "query": {
+          "chargedBack": "false",
+          "datePeriod": "{{ inicio }},{{ fim }}",
+          "pageSize": "99999",
+          "transferTypes": "BancoEuro.DD"
+        },
+        "headers": {
+          "accept": "application/json"
+        },
+        "credential": "cyclos-producao",
+        "save_as": "tr_dd",
+        "retries": 2
+      },
+      {
+        "id": "n_dd",
+        "name": "Fraudes + eventuais fraudes Debito direto",
+        "type": "set",
+        "variable": "f_dd",
+        "expr": "(ev_txt | select('contains', 'dd') | list | length) + (fr_txt | select('contains', 'dd') | list | length)"
+      },
+      {
+        "id": "p_dd",
+        "type": "set",
+        "variable": "p_dd",
+        "value": "{{ ((f_dd / (tr_dd | length)) if (tr_dd | length) else 0) | decimal(4) }}"
+      },
+      {
+        "id": "tr_ccnp",
+        "name": "N.º de transações Cartão de crédito não presente",
+        "type": "http_request",
+        "url": "https://app.lusopay.com:8443/web/api/transfers?fields=id",
+        "query": {
+          "chargedBack": "false",
+          "datePeriod": "{{ inicio }},{{ fim }}",
+          "pageSize": "99999",
+          "transferTypes": "BancoEuro.creditCardPayment"
+        },
+        "headers": {
+          "accept": "application/json"
+        },
+        "credential": "cyclos-producao",
+        "save_as": "tr_ccnp",
+        "retries": 2
+      },
+      {
+        "id": "n_ccnp",
+        "name": "Fraudes + eventuais fraudes Cartão de crédito não presente",
+        "type": "set",
+        "variable": "f_ccnp",
+        "expr": "(ev_txt | select('contains', 'cartaodecreditonaopresente') | list | length) + (fr_txt | select('contains', 'cartaodecreditonaopresente') | list | length)"
+      },
+      {
+        "id": "p_ccnp",
+        "type": "set",
+        "variable": "p_ccnp",
+        "value": "{{ ((f_ccnp / (tr_ccnp | length)) if (tr_ccnp | length) else 0) | decimal(4) }}"
+      },
+      {
+        "id": "tr_ccp",
+        "name": "N.º de transações Cartão de crédito presente",
+        "type": "http_request",
+        "url": "https://app.lusopay.com:8443/web/api/transfers?fields=id",
+        "query": {
+          "chargedBack": "false",
+          "datePeriod": "{{ inicio }},{{ fim }}",
+          "pageSize": "99999",
+          "transferTypes": "BancoEuro.creditCardPresentPayment"
+        },
+        "headers": {
+          "accept": "application/json"
+        },
+        "credential": "cyclos-producao",
+        "save_as": "tr_ccp",
+        "retries": 2
+      },
+      {
+        "id": "n_ccp",
+        "name": "Fraudes + eventuais fraudes Cartão de crédito presente",
+        "type": "set",
+        "variable": "f_ccp",
+        "expr": "(ev_txt | select('contains', 'cartaodecreditopresente') | list | length) + (fr_txt | select('contains', 'cartaodecreditopresente') | list | length)"
+      },
+      {
+        "id": "p_ccp",
+        "type": "set",
+        "variable": "p_ccp",
+        "value": "{{ ((f_ccp / (tr_ccp | length)) if (tr_ccp | length) else 0) | decimal(4) }}"
+      },
+      {
+        "id": "c_caixa",
+        "name": "Canal caixa",
+        "type": "set",
+        "variable": "c_caixa",
+        "expr": "ev_txt | select('contains', 'caixaautomatico') | list | length"
+      },
+      {
+        "id": "c_tpa",
+        "name": "Canal tpa",
+        "type": "set",
+        "variable": "c_tpa",
+        "expr": "ev_txt | select('contains', 'tpa') | list | length"
+      },
+      {
+        "id": "c_telemovel",
+        "name": "Canal telemovel",
+        "type": "set",
+        "variable": "c_telemovel",
+        "expr": "ev_txt | select('contains', 'telemovel') | list | length"
+      },
+      {
+        "id": "c_hostbanco",
+        "name": "Canal hostbanco",
+        "type": "set",
+        "variable": "c_hostbanco",
+        "expr": "ev_txt | select('contains', 'hostbanco') | list | length"
+      },
+      {
+        "id": "c_agente",
+        "name": "Canal agente",
+        "type": "set",
+        "variable": "c_agente",
+        "expr": "ev_txt | select('contains', 'agente') | list | length"
+      },
+      {
+        "id": "c_mobile",
+        "name": "Canal mobile",
+        "type": "set",
+        "variable": "c_mobile",
+        "expr": "ev_txt | select('contains', 'mobile') | list | length"
+      },
+      {
+        "id": "csv",
+        "name": "CSV com dados de desempenho, operações e fraudes",
+        "type": "text_write",
+        "file": "Análise de desempenho, operações e fraudes {{ inicio }} a {{ fim }}.csv",
+        "content": "Dados de clientes recolhidos;Meio de pagamento;N.º de transações;N.º de fraudes ou eventuais fraudes;Percentagem de fraudes face a transações;Canal Caixa Automático;Canal TPA;Canal Telemóvel;Canal Host Banco;Canal WEB (MB Way);Canal AGENTE (Payshop);Jurisdição;Divisa\nIdentificador público de conta;Referências multibanco;{{ tr_mb|length }};{{ f_mb }};{{ p_mb }};{{ c_caixa }};{{ c_tpa }};{{ c_telemovel }};{{ c_hostbanco }};0;0;Portugal;EURO\nIdentificador público de conta;Referências Payshop;{{ tr_payshop|length }};{{ f_payshop }};{{ p_payshop }};0;0;0;0;0;{{ c_agente }};Portugal;EURO\nIdentificador público de conta;MB Way;{{ tr_mbway|length }};{{ f_mbway }};{{ p_mbway }};0;0;0;0;{{ c_mobile }};0;Portugal;EURO\nIdentificador público de conta;Debito direto;{{ tr_dd|length }};{{ f_dd }};{{ p_dd }};{{ c_caixa }};{{ c_tpa }};{{ c_telemovel }};0;0;0;Portugal;EURO\nIdentificador público de conta;Cartão de crédito não presente;{{ tr_ccnp|length }};{{ f_ccnp }};{{ p_ccnp }};0;0;{{ c_telemovel }};0;0;0;Portugal;EURO\nIdentificador público de conta;Cartão de crédito presente;{{ tr_ccp|length }};{{ f_ccp }};{{ p_ccp }};0;{{ c_tpa }};0;0;0;0;Portugal;EURO\n"
+      },
+      {
+        "id": "email",
+        "name": "Envio de email com relatório",
+        "type": "email",
+        "credential": "smtp-lusopay",
+        "to": [
+          "{{ destinatarios }}"
+        ],
+        "subject": "Ficheiro com resultado sobre análise de desempenho, operaçoes e fraudes nas transações dos clientes da LUSOPAY",
+        "body": "Olá,\n\nEm anexo, segue ficheiro que deve ser guardado no Cyclos (menu Relatórios - Relatórios de desempenho, operações e fraudes) contendo a análise do desempenho, de operações e de fraudes face ao número de transações processadas pela LUSOPAY.\nCumprimentos,\n\nRobô da LUSOPAY",
+        "attachments": [
+          "Análise de desempenho, operações e fraudes {{ inicio }} a {{ fim }}.csv"
+        ]
+      }
+    ]
+  }
+}

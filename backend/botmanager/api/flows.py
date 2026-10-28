@@ -116,6 +116,62 @@ def create_flow(body: FlowCreate, request: Request, user: User = Depends(require
     return bot_out(bot, full=True)
 
 
+class FlowImport(BaseModel):
+    """Formato dos ficheiros em bots/flows/*.json."""
+
+    key: str
+    name: str
+    description: str = ""
+    category: str = ""
+    risk_level: Literal["low", "medium", "high"] = "medium"
+    timeout_seconds: int = 1800
+    triggers_allowed: list[str] = ["manual"]
+    requires_approval: bool = False
+    concurrency: Literal["single", "parallel"] = "single"
+    external_effects: list[str] = []
+    prerequisites: list[str] = []
+    source_bot: str = ""
+    migration_notes: list[str] = []
+    definition: dict[str, Any]
+
+
+def import_flow(db: Session, body: FlowImport, user: User) -> tuple[Bot, int, bool]:
+    """Cria o fluxo (desativado) ou grava uma nova versão se já existir. Devolve (bot, versão, criado)."""
+    meta = FlowMeta(**{k: getattr(body, k) for k in FlowMeta.model_fields})
+    notes = [f"Migrado de: {body.source_bot}"] if body.source_bot else []
+    meta.prerequisites = [*meta.prerequisites, *notes, *body.migration_notes]
+    bot = db.scalar(select(Bot).where(Bot.key == body.key))
+    if bot is not None and bot.adapter != "flow":
+        raise HTTPException(409, "a chave pertence a um bot do registo (taskt/OpenBots)")
+    try:
+        defn = _bot_definition(body.key, meta)
+    except ValidationError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    created = bot is None
+    if created:
+        if not KEY_RE.match(body.key):
+            raise HTTPException(422, "chave inválida")
+        bot = Bot(key=body.key, source="ui", availability=Availability.AVAILABLE, enabled=False, name="",
+                  project_ref="", adapter="flow")
+        db.add(bot)
+    _apply_definition(bot, defn)
+    db.flush()
+    try:
+        fv = service.save_version(db, bot, body.definition, user, "importado" + (f" de {body.source_bot}" if body.source_bot else ""))
+    except (ValidationError, ValueError) as exc:
+        db.rollback()
+        raise HTTPException(422, f"fluxo inválido: {exc}") from exc
+    audit(db, "user", user.username, "flow.imported", "bot", bot.id, details={"key": bot.key, "version": fv.version})
+    return bot, fv.version, created
+
+
+@router.post("/import")
+def import_flow_endpoint(body: FlowImport, user: User = Depends(require_role(Role.ADMIN)), db: Session = Depends(get_db)):
+    bot, version, created = import_flow(db, body, user)
+    db.commit()
+    return {"key": bot.key, "version": version, "created": created, "enabled": bot.enabled}
+
+
 @router.get("/{key}")
 def get_flow(key: str, request: Request, version: int | None = None, user: User = Depends(current_user),
              db: Session = Depends(get_db)):

@@ -92,3 +92,28 @@ execução (limite por ficheiro: `BM_ARTIFACT_MAX_BYTES`, 20 MB por omissão). O
 Ordem sugerida (só leitura primeiro): Saldos de clientes → Análise de desempenho/fraudes → Análise PEP →
 Recolhe transações aleatórias → BCFT MB Way (SQL + POST, risco elevado) → Atribuir Tarifa MB Way → reenvio de callbacks.
 Os bots que usam o browser (Selenium) precisam primeiro de um equivalente por API.
+
+## Bots já migrados (`bots/flows/`)
+
+| Ficheiro | Substitui o bot taskt | Notas |
+|---|---|---|
+| `saldos-clientes-nativo.json` | OK Saldos de clientes no Cyclos no final do mês | 10 pedidos em paralelo (o original levava ~3,5 h) |
+| `transacoes-aleatorias-nativo.json` | OK Recolhe transações de clientes aleatórios do mês anterior | sorteio local sem repetições (o original usava randomnumberapi.com por HTTP) |
+| `desempenho-fraudes-nativo.json` | OK Análise de desempenho, operações e fraudes nas transações LUSOPAY | conta registos reais (o original podia contar a mais); manteve a pesquisa de texto por meio/canal |
+
+Todos usam as credenciais **`cyclos-producao`** (API Basic) e **`smtp-lusopay`** (SMTP), e vêm com a variável
+`destinatarios` = `ricardosilva@lusopay.com` para testes. Os destinatários originais estão nas notas de migração de
+cada fluxo (visíveis em Pré-requisitos, no detalhe do bot). Para pôr em produção, edite o fluxo, mude a variável no
+JSON ("Ver JSON") e grave uma nova versão.
+
+A credencial `cyclos-producao` é a da conta API `RPATaskt` que os bots usam hoje: no `Config.txt` do servidor de bots
+está como `RPATaskt,Basic <texto>,`. O `<texto>` é `utilizador:password` codificado em base64. Recomenda-se rodar
+essa password, que estava exposta nos XML (ver `riscos.md`), e gravar a nova só no Bot Manager.
+
+**Importar:** Catálogo → **Importar fluxo (JSON)** → escolher o ficheiro. Também pode ser feito pela linha de comandos:
+`python -m botmanager.cli import-flows` (importa todos). Os fluxos entram **desativados**; é preciso criar as duas
+credenciais antes de importar.
+
+Testes: `worker/tests/test_migrated_flows.py` corre os três contra uma API Cyclos **simulada**. O formato real das
+respostas do Cyclos tem de ser confirmado na primeira execução: correr em paralelo com o bot antigo e comparar os
+ficheiros.

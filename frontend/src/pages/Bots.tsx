@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { api } from "../api";
 import { hasRole, useAuth } from "../auth";
 import { AvailabilityBadge, ErrorBox, RiskBadge, StatusBadge } from "../components/ui";
 import { fmtDate } from "../format";
@@ -11,6 +12,7 @@ export function Bots() {
   const { user } = useAuth();
   const { data, error, reload } = useResource<Bot[]>("/api/bots", 15000);
   const [q, setQ] = useState("");
+  const [importMsg, setImportMsg] = useState<string | null>(null);
   const [category, setCategory] = useState("");
   const categories = useMemo(() => [...new Set((data ?? []).map((b) => b.category).filter(Boolean))].sort(), [data]);
   const bots = (data ?? []).filter(
@@ -22,7 +24,27 @@ export function Bots() {
     <>
       <div className="page-head">
         <h1>Catálogo de bots</h1>
-        {hasRole(user, "admin") && <Link className="btn btn-primary" to="/flows/new">+ Novo fluxo</Link>}
+        {hasRole(user, "admin") && (
+          <div className="actions">
+            <label className="btn">
+              Importar fluxo (JSON)
+              <input type="file" accept=".json,application/json" hidden onChange={async (e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (!file) return;
+                try {
+                  const r = await api.post<{ key: string; version: number; created: boolean }>(
+                    "/api/flows/import", JSON.parse(await file.text()));
+                  setImportMsg(`${r.key}: ${r.created ? "criado (desativado — ative em Administração → Bots)" : `nova versão ${r.version}`}`);
+                  reload();
+                } catch (err) {
+                  setImportMsg(`Erro ao importar ${file.name}: ${(err as Error).message}`);
+                }
+              }} />
+            </label>
+            <Link className="btn btn-primary" to="/flows/new">+ Novo fluxo</Link>
+          </div>
+        )}
       </div>
       <div className="toolbar">
         <input placeholder="Pesquisar…" value={q} onChange={(e) => setQ(e.target.value)} />
@@ -34,6 +56,7 @@ export function Bots() {
         </select>
       </div>
       <ErrorBox error={error} />
+      {importMsg && <div className={`alert ${importMsg.startsWith("Erro") ? "alert-error" : "alert-info"}`}>{importMsg}</div>}
       <div className="bot-grid">
         {bots.map((b) => (
           <article key={b.key} className="bot-card">

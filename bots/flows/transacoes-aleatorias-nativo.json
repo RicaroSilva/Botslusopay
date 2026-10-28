@@ -1,0 +1,218 @@
+{
+  "key": "transacoes-aleatorias-nativo",
+  "name": "Análise BCFT de 30 clientes aleatórios do mês anterior (fluxo nativo)",
+  "category": "Compliance",
+  "risk_level": "medium",
+  "timeout_seconds": 3600,
+  "triggers_allowed": [
+    "manual",
+    "schedule"
+  ],
+  "description": "Escolhe 30 clientes ativos ao acaso, recolhe os créditos do mês anterior de cada um, envia um CSV por cliente com transações e, no fim, a lista de clientes analisados. Substitui o bot taskt 'OK Recolhe transações de clientes aleatórios do mês anterior'.",
+  "external_effects": [
+    "GET à API Cyclos produtiva",
+    "Um email por cliente com transações + um email com o relatório"
+  ],
+  "prerequisites": [
+    "Credencial 'cyclos-producao' (API Basic)",
+    "Credencial 'smtp-lusopay' (SMTP)"
+  ],
+  "source_bot": "OK Recolhe transações de clientes aleatórios do mês anterior.xml",
+  "migration_notes": [
+    "Destinatários originais: jar@lusopay.com, geral@lusopay.com, admin@magnimeios.pt. Para testar vem ricardosilva@lusopay.com na variável 'destinatarios'.",
+    "O original pedia os números aleatórios a http://www.randomnumberapi.com (sem TLS, podia repetir clientes). Aqui a escolha é feita localmente, sem repetições.",
+    "O CSV mantém as colunas 'Opinião PBCFT' e 'Analista' vazias, para preenchimento manual, como no original."
+  ],
+  "definition": {
+    "description": "Amostra aleatória de clientes → transações do mês anterior → emails",
+    "variables": {
+      "destinatarios": "ricardosilva@lusopay.com",
+      "tamanho_amostra": 30,
+      "grupos": "EnvioFundosENI,EnvioFundosPessoaColetiva,EnvioFundosPessoaSingular,ExpiredDocsCollectiveGroup,ExpiredDocsPersonalGroup,EsEniSemMensalidade,EsEniComMensalidade,EsPlanoNegociosSemMensalidade,ESnegocios,ESpessoal,EsPessoalComMensalidade,GbEniLight,GbEniPlus,GbNegociosLight,GBnegocios,GBpessoal,GbPessoalPlus,PtEniSemMensalidade,PtEniComMensalidade,PTentidade2assinaturasNegocios1,PTentidade2assinaturasNegocios2,gratis,PtPenhoraPessoaColetiva,PtPenhoraPessoaSingular,PTPlanoCorporate,PTPlanoComercio,PTPlanoServicos,PTPlanoPessoal,PTPlanoPessoalComMensalidade,PTPortugalCrowdBeneficiarios,PTPortugalCrowdInvestidores"
+    },
+    "steps": [
+      {
+        "id": "hoje",
+        "type": "set",
+        "variable": "hoje",
+        "value": "{{ now() | date('%Y-%m-%d') }}"
+      },
+      {
+        "id": "inicio",
+        "name": "Primeiro dia do mês anterior",
+        "type": "set",
+        "variable": "inicio",
+        "value": "{{ first_day_of_month(-1) | date('%Y-%m-%d') }}"
+      },
+      {
+        "id": "fim",
+        "name": "Último dia do mês anterior",
+        "type": "set",
+        "variable": "fim",
+        "value": "{{ first_day_of_month(0) | add_days(-1) | date('%Y-%m-%d') }}"
+      },
+      {
+        "id": "clientes",
+        "name": "Recolhe Cyclos ID e IPC de todos os clientes",
+        "type": "http_request",
+        "method": "GET",
+        "url": "https://app.lusopay.com:8443/web/api/users?fields=id&fields=customValues.IdentificadorPublicoDeConta",
+        "query": {
+          "groups": "{{ grupos }}",
+          "pageSize": "99999",
+          "roles": "member",
+          "statuses": "active"
+        },
+        "headers": {
+          "accept": "application/json"
+        },
+        "credential": "cyclos-producao",
+        "save_as": "clientes",
+        "timeout_seconds": 300,
+        "retries": 2
+      },
+      {
+        "id": "ipcs",
+        "name": "Número de clientes",
+        "type": "log",
+        "message": "{{ clientes | length }} clientes ativos"
+      },
+      {
+        "id": "amostra",
+        "type": "set",
+        "variable": "amostra",
+        "expr": "clientes | sample(tamanho_amostra)"
+      },
+      {
+        "id": "relatorio",
+        "type": "set",
+        "variable": "relatorio",
+        "expr": "['Relatório de clientes analisados aleatoriamente para efeitos de PBCFT', '']"
+      },
+      {
+        "id": "analisa",
+        "name": "Analisa cada cliente",
+        "type": "foreach",
+        "items_expr": "amostra",
+        "item_variable": "c",
+        "parallel": 1,
+        "steps": [
+          {
+            "id": "ipc",
+            "type": "set",
+            "variable": "ipc",
+            "expr": "c | find('IdentificadorPublicoDeConta') or c.id"
+          },
+          {
+            "id": "movimentos",
+            "name": "Movimentos a crédito do mês anterior",
+            "type": "http_request",
+            "method": "GET",
+            "url": "https://app.lusopay.com:8443/web/api/{{ c.id }}/accounts/EUR/history",
+            "query": {
+              "chargedBack": "false",
+              "datePeriod": "{{ inicio }},{{ fim }}",
+              "direction": "credit",
+              "pageSize": "99999"
+            },
+            "headers": {
+              "accept": "application/json"
+            },
+            "credential": "cyclos-producao",
+            "save_as": "mov",
+            "retries": 2
+          },
+          {
+            "id": "tem",
+            "type": "if",
+            "condition": "mov | length == 0",
+            "then": [
+              {
+                "id": "sem",
+                "type": "append",
+                "variable": "relatorio",
+                "expr": "ipc ~ ' - sem transações'"
+              }
+            ],
+            "otherwise": [
+              {
+                "id": "csv",
+                "type": "csv_write",
+                "file": "Análise das transações de {{ ipc }} entre {{ inicio }} e {{ fim }}.csv",
+                "rows_expr": "mov",
+                "columns": [
+                  {
+                    "header": "Data",
+                    "value": "{{ row.date }}"
+                  },
+                  {
+                    "header": "Tipo de transação",
+                    "value": "{{ row.type.name if row.type is mapping else '' }}"
+                  },
+                  {
+                    "header": "Descrição",
+                    "value": "{{ row.description | default('') }}"
+                  },
+                  {
+                    "header": "Valor",
+                    "value": "{{ row.amount }}"
+                  },
+                  {
+                    "header": "Número da transação",
+                    "value": "{{ row.transactionNumber | default('') }}"
+                  },
+                  {
+                    "header": "Opinião PBCFT",
+                    "value": ""
+                  },
+                  {
+                    "header": "Analista",
+                    "value": ""
+                  }
+                ]
+              },
+              {
+                "id": "mail1",
+                "type": "email",
+                "credential": "smtp-lusopay",
+                "to": [
+                  "{{ destinatarios }}"
+                ],
+                "subject": "Lista de transações do cliente {{ ipc }} relativas ao mês anterior",
+                "body": "Olá,\n\nEm anexo, segue ficheiro com transações do mês anterior para serem analisadas e posteriormente guardadas no Cyclos, na ficha do cliente, em «Análise transações não suspeitas de BCFT» ou em «Comunicações UIF», consoante os casos.\n\nCumprimentos,\n\nRobô da LUSOPAY",
+                "attachments": [
+                  "Análise das transações de {{ ipc }} entre {{ inicio }} e {{ fim }}.csv"
+                ]
+              },
+              {
+                "id": "com",
+                "type": "append",
+                "variable": "relatorio",
+                "expr": "ipc ~ ' - com transações'"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "txt",
+        "type": "text_write",
+        "file": "BCFT - análise aleatória de clientes - {{ hoje }}.txt",
+        "content": "{{ relatorio | join('\n') }}\n\nRelatório criado pelo Bot Manager\n"
+      },
+      {
+        "id": "mail2",
+        "type": "email",
+        "credential": "smtp-lusopay",
+        "to": [
+          "{{ destinatarios }}"
+        ],
+        "subject": "Lista de clientes aleatórios que foram analisados para efeitos de PBCFT",
+        "body": "Olá,\n\nEm anexo, segue ficheiro com lista de clientes analisados para se guardar no Google Drive, na pasta LUSOPAY - Países - Portugal - Banco de Portugal - Lista usada da seleção de clientes a inspecionar pelo BCFT\n\nCumprimentos,\n\nRobô da LUSOPAY",
+        "attachments": [
+          "BCFT - análise aleatória de clientes - {{ hoje }}.txt"
+        ]
+      }
+    ]
+  }
+}

@@ -218,8 +218,14 @@ def test_attachment_must_be_produced_by_flow(tmp_path):
 
 def test_invalid_email_and_bad_filename(tmp_path):
     eng, _, _ = make_engine(tmp_path, [{"id": "m", "type": "email", "credential": "smtp-geral",
-                                        "to": ["a@b.pt, c@d.pt"], "subject": "s", "body": "b"}])
+                                        "to": ["a@b.pt, nao-e-email"], "subject": "s", "body": "b"}])
     assert eng.run()["status"] == "FAILED"
+    # vários endereços na mesma entrada (separados por vírgula) são aceites
+    eng, _, _ = make_engine(tmp_path, [{"id": "m", "type": "email", "credential": "smtp-geral",
+                                        "to": ["{{ destinos }}"], "subject": "s", "body": "b"}],
+                            variables={"destinos": "a@b.pt, c@d.pt"})
+    assert eng.run()["status"] == "SUCCEEDED"
+    assert FakeSMTP.sent[0][1]["To"] == "a@b.pt, c@d.pt"
     eng, _, _ = make_engine(tmp_path, [{"id": "t", "type": "text_write", "file": "{{ '../x' }}", "content": "c"}])
     assert eng.run()["status"] == "FAILED"
 
@@ -282,3 +288,11 @@ def test_extract_path():
     assert extract_path(data, "$.a.items[1].id") == 2
     assert extract_path(data, "b[0][1]") == 2
     assert extract_path(data, "a.nada.x") is None
+
+
+def test_query_params_merge_with_url_params(tmp_path):
+    step = {"id": "u", "type": "http_request", "url": "https://api.exemplo.pt/users?fields=id&fields=name",
+            "query": {"pageSize": "99999"}, "save_as": "r"}
+    eng, _, calls = make_engine(tmp_path, [step])
+    assert eng.run()["status"] == "SUCCEEDED"
+    assert calls[0].url.query.decode() == "fields=id&fields=name&pageSize=99999"

@@ -4,6 +4,7 @@
   python -m botmanager.cli create-user --username admin --role admin
   python -m botmanager.cli create-worker --name BOTSERVER1 --capabilities taskt_cli
   python -m botmanager.cli validate-registry
+  python -m botmanager.cli import-flows [ficheiro.json ...]
 """
 from __future__ import annotations
 
@@ -30,6 +31,9 @@ def main(argv: list[str] | None = None) -> int:
     cu.add_argument("--username", required=True)
     cu.add_argument("--role", choices=[r.value for r in Role], default="viewer")
     cu.add_argument("--display-name", default="")
+    imp = sub.add_parser("import-flows", help="importa fluxos de bots/flows/*.json (ou ficheiros indicados)")
+    imp.add_argument("files", nargs="*")
+    imp.add_argument("--as-user", default="admin", help="utilizador registado como autor da versão")
     cw = sub.add_parser("create-worker")
     cw.add_argument("--name", required=True)
     cw.add_argument("--capabilities", default="taskt_cli")
@@ -68,6 +72,35 @@ def main(argv: list[str] | None = None) -> int:
             db.commit()
             print(f"utilizador {username} criado ({args.role})")
             return 0
+        if args.cmd == "import-flows":
+            import json
+            from pathlib import Path
+
+            from fastapi import HTTPException
+
+            from .api.flows import FlowImport, import_flow
+            from .config import REPO_ROOT
+
+            user = db.scalar(select(User).where(User.username == args.as_user))
+            if user is None:
+                print(f"utilizador {args.as_user} não existe (use --as-user)", file=sys.stderr)
+                return 1
+            files = [Path(f) for f in args.files] or sorted((REPO_ROOT / "bots" / "flows").glob("*.json"))
+            errors = 0
+            for f in files:
+                try:
+                    bot, version, created = import_flow(db, FlowImport.model_validate_json(f.read_text(encoding="utf-8")), user)
+                    db.commit()
+                    print(f"OK    {bot.key:35} versão {version} ({'criado, desativado' if created else 'nova versão'})")
+                except HTTPException as exc:
+                    db.rollback()
+                    errors += 1
+                    print(f"ERRO  {f.name}: {exc.detail}", file=sys.stderr)
+                except ValueError as exc:
+                    db.rollback()
+                    errors += 1
+                    print(f"ERRO  {f.name}: {exc}", file=sys.stderr)
+            return 1 if errors else 0
         if args.cmd == "create-worker":
             token = new_token()
             w = Worker(name=args.name, token_hash=hash_token(token),

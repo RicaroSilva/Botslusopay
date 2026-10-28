@@ -213,3 +213,28 @@ def test_smtp_sender_must_be_full_email(clients):
     bad = {**SMTP, "name": "smtp-mau", "fields": {**SMTP["fields"], "from_address": "teste"}}
     r = clients["admin"].post("/api/admin/credentials", json=bad)
     assert r.status_code == 422 and "email completo" in r.json()["detail"]
+
+
+def test_import_migrated_flows(env, clients):
+    import json
+
+    from botmanager.config import REPO_ROOT
+
+    a = clients["admin"]
+    a.post("/api/admin/credentials", json={**API, "name": "cyclos-producao"})
+    a.post("/api/admin/credentials", json={**SMTP, "name": "smtp-lusopay"})
+    files = sorted((REPO_ROOT / "bots" / "flows").glob("*.json"))
+    assert len(files) >= 3
+    for f in files:
+        r = a.post("/api/flows/import", json=json.loads(f.read_text(encoding="utf-8")))
+        assert r.status_code == 200, (f.name, r.text)
+        assert r.json()["created"] and not r.json()["enabled"]
+    # reimportar cria nova versão
+    r = a.post("/api/flows/import", json=json.loads(files[0].read_text(encoding="utf-8")))
+    assert r.json() == {**r.json(), "created": False, "version": 2}
+    # sem credenciais → erro claro
+    assert "credencial inexistente" in clients["admin"].post("/api/flows/import", json={
+        **json.loads(files[0].read_text(encoding="utf-8")), "key": "outro-fluxo",
+        "definition": {"steps": [{"id": "x", "type": "http_request", "url": "https://x.pt", "credential": "nada"}]}}).text
+    # não pode sobrepor bots taskt do registo
+    assert a.post("/api/flows/import", json={**json.loads(files[0].read_text(encoding="utf-8")), "key": "low-bot"}).status_code == 409

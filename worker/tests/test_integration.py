@@ -203,3 +203,14 @@ def test_redaction_parity_with_backend():
     from lusopay_worker import redaction as w
 
     assert [p.pattern for p, _ in b._PATTERNS] == [p.pattern for p, _ in w._PATTERNS]
+
+
+def test_flow_filters_parity_with_backend_validation():
+    from botmanager.flows import schema
+    from lusopay_worker.flowengine import make_env
+
+    env = make_env()
+    base = __import__("jinja2.sandbox", fromlist=["SandboxedEnvironment"]).SandboxedEnvironment()
+    assert set(env.filters) == set(base.filters) | set(schema.ENGINE_FILTERS)
+    assert set(env.tests) == set(base.tests) | set(schema.ENGINE_TESTS)
+    assert set(env.globals) == set(base.globals) | set(schema.ENGINE_GLOBALS)

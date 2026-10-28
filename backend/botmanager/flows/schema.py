@@ -13,7 +13,7 @@ import re
 from typing import Annotated, Any, Literal, Union
 from urllib.parse import urlsplit
 
-from jinja2 import TemplateSyntaxError
+from jinja2 import TemplateError
 from jinja2.sandbox import SandboxedEnvironment
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, field_validator, model_validator
 
@@ -22,12 +22,23 @@ MAX_STEPS = 300
 MAX_DEPTH = 6
 
 _env = SandboxedEnvironment()
+# Filtros, testes e funções do motor (lusopay_worker.flowengine.make_env). Aqui só servem
+# para a validação reconhecer os nomes; a implementação real está no runner.
+ENGINE_FILTERS = ("date", "add_days", "tojson", "fromjson", "money", "decimal", "sample", "find")
+ENGINE_TESTS = ("contains",)
+ENGINE_GLOBALS = ("now", "today", "first_day_of_month")
+for _n in ENGINE_FILTERS:
+    _env.filters[_n] = lambda v, *a, **k: v
+for _n in ENGINE_TESTS:
+    _env.tests[_n] = lambda v, *a: True
+for _n in ENGINE_GLOBALS:
+    _env.globals[_n] = lambda *a: None
 
 
 def check_template(value: str) -> str:
     try:
-        _env.parse(value)
-    except TemplateSyntaxError as exc:
+        _env.from_string(value)
+    except TemplateError as exc:
         raise ValueError(f"modelo inválido: {exc.message}") from exc
     return value
 
@@ -35,7 +46,7 @@ def check_template(value: str) -> str:
 def check_expr(value: str) -> str:
     try:
         _env.compile_expression(value)
-    except TemplateSyntaxError as exc:
+    except TemplateError as exc:
         raise ValueError(f"expressão inválida: {exc.message}") from exc
     return value
 
