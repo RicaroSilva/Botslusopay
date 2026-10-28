@@ -156,5 +156,10 @@ cd worker && pip install -e . && WORKER_BACKEND_URL=http://127.0.0.1:8000 WORKER
 Os bots `[SIMULADO]` (pasta `bots/registry-dev`) só são carregados quando esta pasta está em `BM_EXTRA_REGISTRY_DIRS`.
 Não a configure em produção.
 
+**Windows, num clique:** `arrancar.bat` (na raiz do repositório) faz `git pull`, instala as dependências, corre
+`alembic upgrade head`, compila o frontend e abre duas janelas, uma com o backend e outra com o worker (adaptador `flow`). O token
+do worker é lido de `worker.token`, na raiz, ficheiro ignorado pelo Git. Feche antes um backend que já esteja a correr
+(a porta 8000 tem de estar livre).
+
 Testes: `cd backend && pytest`, `cd worker && pytest`, `cd frontend && npm test`. Para correr os testes do backend
 contra PostgreSQL: `BM_TEST_DATABASE_URL=postgresql+psycopg://… pytest`.

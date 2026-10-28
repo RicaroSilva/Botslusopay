@@ -39,7 +39,7 @@ class WorkerConfig:
         token = _env("WORKER_TOKEN")
         token_file = _env("WORKER_TOKEN_FILE")
         if token_file:
-            token = Path(token_file).read_text(encoding="utf-8").strip()
+            token = Path(token_file).read_text(encoding="utf-8-sig").strip()  # o Bloco de Notas pode gravar com BOM
         if not token:
             raise SystemExit("WORKER_TOKEN_FILE (ou WORKER_TOKEN) é obrigatório")
         url = _env("WORKER_BACKEND_URL")
