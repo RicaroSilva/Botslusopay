@@ -134,6 +134,8 @@ class FlowImport(BaseModel):
     source_bot: str = ""
     migration_notes: list[str] = []
     definition: dict[str, Any]
+    # conteúdo inicial dos ficheiros persistentes (base64); não substitui ficheiros que já existam
+    persistent_contents: dict[str, str] = {}
 
 
 def import_flow(db: Session, body: FlowImport, user: User) -> tuple[Bot, int, bool]:
@@ -160,10 +162,31 @@ def import_flow(db: Session, body: FlowImport, user: User) -> tuple[Bot, int, bo
     try:
         fv = service.save_version(db, bot, body.definition, user, "importado" + (f" de {body.source_bot}" if body.source_bot else ""))
     except (ValidationError, ValueError) as exc:
-        db.rollback()
         raise HTTPException(422, f"fluxo inválido: {exc}") from exc
+    _initial_files(db, bot, fv.definition, body.persistent_contents, user)
     audit(db, "user", user.username, "flow.imported", "bot", bot.id, details={"key": bot.key, "version": fv.version})
     return bot, fv.version, created
+
+
+def _initial_files(db: Session, bot: Bot, definition: dict[str, Any], contents: dict[str, str], user: User) -> None:
+    import base64
+    import binascii
+
+    from ..models import FlowFile
+
+    declared = set(definition.get("persistent_files") or [])
+    for name, b64 in contents.items():
+        if name not in declared:
+            continue
+        if db.scalar(select(FlowFile.id).where(FlowFile.bot_id == bot.id, FlowFile.name == name)):
+            continue  # já existe: mantém o estado atual (ex.: reimportação)
+        try:
+            data = base64.b64decode(b64, validate=True)
+        except (binascii.Error, ValueError) as exc:
+            raise HTTPException(422, f"conteúdo inválido para {name}") from exc
+        if len(data) > FLOW_FILE_MAX_BYTES:
+            raise HTTPException(413, f"{name} demasiado grande (máx. 5 MB)")
+        save_flow_file(db, bot, name, data, f"import:{user.username}")
 
 
 @router.post("/import")
@@ -211,6 +234,69 @@ def convert_robot(body: ConvertIn, user: User = Depends(require_role(Role.ADMIN)
     audit(db, "user", user.username, "flow.converted", "file", body.filename[:120], details={"stats": result.stats})
     db.commit()
     return out
+
+
+class BatchIn(BaseModel):
+    content_b64: str = Field(max_length=140_000_000)
+    test_email: str = Field(default="", max_length=254)
+    approval_for_high_risk: bool = True
+
+
+@router.post("/import-batch")
+def import_batch(body: BatchIn, user: User = Depends(require_role(Role.ADMIN)), db: Session = Depends(get_db)):
+    """Converte e importa todos os robôs de um .zip. Cada fluxo entra desativado; os que precisam de credenciais
+    ainda não criadas ficam de fora (crie-as e volte a importar: os já importados recebem uma nova versão)."""
+    import base64
+    import binascii
+
+    from ..flows.converters import convert, read_robot
+    from ..flows.converters.batch import split_robots
+    from ..flows.converters.readers import RobotFormatError
+    from ..models import Credential
+
+    try:
+        robots = split_robots(base64.b64decode(body.content_b64, validate=True))
+    except (binascii.Error, ValueError) as exc:
+        raise HTTPException(422, "conteúdo inválido") from exc
+    except RobotFormatError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    existing = {c.name: c.kind for c in db.scalars(select(Credential))}
+    results = []
+    for filename, data in robots:
+        item: dict[str, Any] = {"file": filename}
+        try:
+            res = convert(read_robot(data, filename), test_email=body.test_email)
+        except RobotFormatError as exc:
+            results.append({**item, "status": "erro", "error": str(exc)})
+            continue
+        item.update(key=res.key, name=res.name, stats=res.stats, risk_level=res.risk_level,
+                    persistent_files=res.definition.get("persistent_files", []),
+                    files_loaded=sorted(res.data_files))
+        missing = [n for n, k in res.credentials.items() if existing.get(n) != k]
+        if missing:
+            results.append({**item, "status": "faltam_credenciais", "missing_credentials": missing})
+            continue
+        problems = [r for r in res.report if r.level in ("nao_convertivel", "aproximado")]
+        imp = FlowImport(
+            key=res.key, name=res.name, category="Importado", risk_level=res.risk_level, timeout_seconds=7200,
+            requires_approval=body.approval_for_high_risk and res.risk_level == "high",
+            description=f"Convertido automaticamente de {filename} ({res.source_format}). Rever antes de usar.",
+            source_bot=filename, definition=res.definition,
+            migration_notes=[f"Conversão: {res.stats.get('convertido', 0)} convertidos, {res.stats.get('aproximado', 0)} "
+                             f"aproximados, {res.stats.get('nao_convertivel', 0)} não convertíveis.",
+                             *[f"Linha {r.line} ({r.command}): {r.message}" for r in problems[:20]]],
+            persistent_contents={n: base64.b64encode(d).decode() for n, d in res.data_files.items()})
+        try:
+            with db.begin_nested():
+                bot, version, created = import_flow(db, imp, user)
+        except HTTPException as exc:
+            results.append({**item, "status": "erro", "error": str(exc.detail)[:500]})
+            continue
+        results.append({**item, "status": "criado" if created else "nova_versao", "version": version})
+    audit(db, "user", user.username, "flow.batch_imported", "file", "batch",
+          details={"robots": len(robots), "imported": sum(r["status"] in ("criado", "nova_versao") for r in results)})
+    db.commit()
+    return results
 
 
 @router.delete("/{key}")

@@ -20,6 +20,7 @@ from xml.etree import ElementTree as ET
 from defusedxml import ElementTree as SafeET
 
 from .model import Command, Robot
+from .openbots import normalize
 
 XSI_TYPE = "{http://www.w3.org/2001/XMLSchema-instance}type"
 META_ATTRS = {"CommandID", "CommandName", "SelectionName", "DefaultPause", "PauseBeforeExeucution",
@@ -100,7 +101,7 @@ def _walk_json(actions: list[Any], out: list[Command]) -> None:
             continue
         sc = a.get("ScriptCommand") or a.get("Command")
         if isinstance(sc, dict):
-            out.append(_json_command(sc))
+            out.append(normalize(_json_command(sc)))
         _walk_json(a.get("AdditionalScriptCommands") or [], out)
 
 
@@ -121,8 +122,26 @@ def read_openbots_json(data: bytes, name: str) -> Robot:
         if isinstance(v, dict) and v.get("ArgumentName"):
             variables[v["ArgumentName"]] = "" if v.get("ArgumentValue") is None else str(v.get("ArgumentValue"))
     robot = Robot(name=name, source_format="openbots", commands=commands, variables=variables, files=[name])
-    robot.notes.append("Formato OpenBots lido por dedução (derivado do taskt); confirme o resultado com cuidado.")
     return robot
+
+
+def zip_name(info: zipfile.ZipInfo) -> str:
+    """Nome de um membro do .zip. Sem a marca UTF-8 (ex.: 'Pasta comprimida' do Windows), o Python lê os nomes
+    como cp437; recupera-se o UTF-8 ou a página de código portuguesa (cp850)."""
+    name = info.filename
+    if not info.flag_bits & 0x800:
+        raw = name.encode("cp437", errors="replace")
+        for enc in ("utf-8", "cp850"):
+            try:
+                name = raw.decode(enc)
+                break
+            except UnicodeDecodeError:
+                continue
+    return name.replace("\\", "/")
+
+
+DATA_EXTENSIONS = (".txt", ".csv", ".json")
+DATA_MAX_BYTES = 5 * 1024 * 1024
 
 
 def read_zip(data: bytes, name: str) -> Robot:
@@ -133,13 +152,14 @@ def read_zip(data: bytes, name: str) -> Robot:
     infos = [i for i in zf.infolist() if not i.is_dir()]
     if sum(i.file_size for i in infos) > MAX_BYTES * 5:
         raise RobotFormatError("projeto demasiado grande")
-    names = {i.filename.replace("\\", "/"): i for i in infos}
-    main = None
+    names = {zip_name(i): i for i in infos}
+    main, project_name = None, ""
     for n in names:
         if n.lower().endswith("project.obconfig"):
             try:
                 cfg = json.loads(zf.read(names[n]).decode("utf-8-sig"))
                 m = cfg.get("Main") or cfg.get("main")
+                project_name = str(cfg.get("ProjectName") or "").strip()
                 if m:
                     base = n.rsplit("/", 1)[0] + "/" if "/" in n else ""
                     main = next((k for k in names if k.endswith(base + m) or k.endswith("/" + m) or k == m), None)
@@ -152,10 +172,23 @@ def read_zip(data: bytes, name: str) -> Robot:
     if main is None:
         raise RobotFormatError("o .zip não contém nenhum script (.obscript, .json ou .xml)")
     robot = read_robot(zf.read(names[main]), main.rsplit("/", 1)[-1])
-    others = sorted(k for k in names if k != main and k.lower().endswith((".obscript", ".xml")))
-    if others:
-        robot.notes.append("Outros scripts no projeto (importe-os em separado se forem chamados com Run Task): "
-                           + ", ".join(o.rsplit("/", 1)[-1] for o in others[:20]))
+    if project_name:  # o nome do projeto identifica o robô (o script principal chama-se quase sempre Main)
+        robot.name = project_name
+    # Os outros scripts do projeto são incorporados onde forem chamados com Run Task.
+    for k in sorted(names):
+        base = k.rsplit("/", 1)[-1]
+        if k == main or not base.lower().endswith((".obscript", ".xml")):
+            continue
+        try:
+            robot.subscripts[base.lower()] = read_robot(zf.read(names[k]), base)
+        except RobotFormatError as exc:
+            robot.notes.append(f"Script {base} ignorado: {exc}")
+    # Ficheiros de dados (listas, controlo): podem passar a ficheiros persistentes do fluxo.
+    for k in sorted(names):
+        base = k.rsplit("/", 1)[-1]
+        if (base.lower().endswith(DATA_EXTENSIONS) and base.lower() != "config.txt"
+                and names[k].file_size <= DATA_MAX_BYTES and base not in robot.data_files):
+            robot.data_files[base] = zf.read(names[k])
     return robot
 
 

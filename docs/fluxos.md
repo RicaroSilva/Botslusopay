@@ -171,5 +171,23 @@ Resultado com os 64 XML enviados: todos convertidos com estrutura válida; 75% d
 browser). **Um fluxo convertido tem sempre de ser revisto e testado** contra o ambiente dev antes de substituir o
 robô original.
 
-O formato do OpenBots foi tratado a partir da estrutura herdada do taskt e **ainda não foi testado com um projeto
-OpenBots real**.
+**OpenBots:** o formato foi confirmado com os projetos reais do servidor de bots (OpenBots Studio 1.4). Os comandos
+são normalizados para os equivalentes do taskt (`backend/botmanager/flows/converters/openbots.py`). Num projeto `.zip`:
+
+- os outros scripts do projeto chamados com **Run Task** são incorporados no sítio, com os argumentos In/Out passados
+  como variáveis (o sub-robô de configuração, que lia o `Config.txt`, é removido);
+- o elemento de *Loop Collection* fica na variável indicada no OpenBots; Switch/Case passa a uma cadeia de condições;
+  Throw/Rethrow passam a "Falhar", dentro de Try/Catch; *New Secure String* nunca é copiado (use o cofre);
+- os ficheiros `.txt`/`.csv`/`.json` do projeto com o mesmo nome de um ficheiro de controlo são carregados como
+  conteúdo inicial dos ficheiros persistentes.
+
+Run Task para robôs **de outra pasta** (ex.: os orquestradores "processos diários") continua a ficar como passo
+"Falhar": substitua-o por regras de agendamento ou "Após outro bot".
+
+### Importar vários robôs de uma vez
+
+**Importar robô → Importar vários robôs de uma vez**: comprimir a pasta dos robôs em `.zip` (no Windows: botão
+direito → Enviar para → Pasta comprimida) e carregar. Cada `.xml` na raiz e cada pasta de projeto passa a um fluxo
+**desativado**, com o relatório por robô. O `Config.txt` nunca é lido. Os robôs que precisem de credenciais ainda não
+criadas ficam de fora, com a lista das que faltam: crie-as e volte a importar o mesmo `.zip`. Os fluxos que já existem
+recebem uma nova versão e os ficheiros persistentes já carregados não são substituídos.

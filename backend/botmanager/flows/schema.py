@@ -26,7 +26,7 @@ _env = SandboxedEnvironment()
 # para a validação reconhecer os nomes; a implementação real está no runner.
 ENGINE_FILTERS = ("date", "add_days", "tojson", "fromjson", "money", "decimal", "sample", "find", "text",
                   "parsejson", "num", "between", "after", "before", "regex", "jsonpath", "split_text", "add_time",
-                  "todate", "row_values")
+                  "todate", "row_values", "regex_replace", "regex_split")
 ENGINE_TESTS = ("contains",)
 ENGINE_GLOBALS = ("now", "today", "first_day_of_month", "taskt_compare", "is_numeric", "file_exists")
 for _n in ENGINE_FILTERS:

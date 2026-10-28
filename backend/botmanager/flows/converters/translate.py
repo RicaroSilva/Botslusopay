@@ -12,6 +12,7 @@ Princípios:
 """
 from __future__ import annotations
 
+import base64
 import json
 import re
 from dataclasses import dataclass, field
@@ -42,7 +43,6 @@ ALIASES = {
     "GetTextLengthCommand": "GetWordLengthCommand",
     "ModifyTextCommand": "ModifyVariableCommand",
     "RegexExtractorCommand": "RegExExtractorCommand",
-    "ThrowCommand": "StopTaskCommand",
 }
 
 UI_PREFIXES = ("Selenium", "SendKeys", "SendMouse", "SendAdvancedKeyStrokes", "SendHotkey", "ActivateWindow",
@@ -93,6 +93,7 @@ class ConversionResult:
     credentials: dict[str, str]  # nome → tipo
     risk_level: str
     notes: list[str] = field(default_factory=list)
+    data_files: dict[str, bytes] = field(default_factory=dict)  # conteúdo atual dos ficheiros persistentes
 
     @property
     def stats(self) -> dict[str, int]:
@@ -105,7 +106,9 @@ class ConversionResult:
         return {"name": self.name, "key": self.key, "source_format": self.source_format,
                 "definition": self.definition, "report": [r.as_dict() for r in self.report],
                 "credentials": self.credentials, "risk_level": self.risk_level, "stats": self.stats,
-                "notes": self.notes}
+                "notes": self.notes,
+                "data_files": [{"name": n, "size": len(d), "content_b64": base64.b64encode(d).decode()}
+                               for n, d in sorted(self.data_files.items())]}
 
 
 class _Unsupported(Exception):
@@ -119,7 +122,8 @@ class Translator:
         self.report: list[ReportItem] = []
         self.credentials: dict[str, str] = {}
         self.written: set[str] = set()
-        self.loop_lists: list[str] = []  # variáveis de ciclos sobre listas ativos
+        self.loop_lists: list[str] = []
+        self.inline_stack: list[str] = []  # variáveis de ciclos sobre listas ativos
         self.referenced: set[str] = set()
         self.declared = {self.var(k): v for k, v in robot.variables.items() if k}
         self.continue_on_error = False
@@ -134,7 +138,8 @@ class Translator:
         """Ficheiros de nome fixo que o robô lê (ex.: 'ultimo id processado.txt'): guardam estado entre execuções e
         passam a ser ficheiros persistentes do fluxo."""
         out = set()
-        for c in robot.commands:
+        cmds = list(robot.commands) + [c for sub in robot.subscripts.values() for c in sub.commands]
+        for c in cmds:
             if c.enabled and ALIASES.get(c.type, c.type) == "ReadTextFileCommand":
                 name = self.basename(c.attrs.get("v_FilePath", ""))
                 if name and "{{" not in name and "config" not in name.lower() and FILE_NAME_RE.match(name):
@@ -174,7 +179,7 @@ class Translator:
                 ".Hour": "now().hour", ".Minute": "now().minute", ".Second": "now().second",
                 ".FileSafe": "(now() | date('%m-%d-%Y %H-%M-%S'))", ".DayOfWeek": "(now() | date('%A'))",
             }.get(rest)
-        if t.startswith(("Folder.", "Env.", "Engine.")):
+        if t.startswith(("Folder.", "Env.", "Engine.")) or t == "ProjectPath":
             return "''"
         if t.startswith("Loop.CurrentIndex"):
             return "loop_index"
@@ -237,7 +242,7 @@ class Translator:
         """Nome do ficheiro (sem pastas) como modelo."""
         raw = (path or "").replace("/", "\\")
         name = PureWindowsPath(raw).name if "\\" in raw else raw
-        name = re.sub(r"\{Folder\.[A-Za-z]+\}", "", name)
+        name = re.sub(r"\{(Folder\.[A-Za-z]+|ProjectPath)\}", "", name)
         return self.tpl(name).strip()
 
     # ------------------------------------------------------------------ relatório e passos
@@ -307,7 +312,7 @@ class Translator:
             if c.type in terminators:
                 return steps, i, c.type
             if c.type in ("EndIfCommand", "EndLoopCommand", "ElseCommand", "EndTryCommand",
-                          "CatchExceptionCommand", "FinallyCommand"):
+                          "CatchExceptionCommand", "FinallyCommand", "CaseCommand", "EndSwitchCommand"):
                 return steps, i, c.type  # terminador que não é deste bloco
             self.cmd = c
             if c.type in ("BeginIfCommand", "BeginMultiIfCommand"):
@@ -317,6 +322,10 @@ class Translator:
             if c.type in ("BeginListLoopCommand", "BeginNumberOfTimesLoopCommand", "BeginContinousLoopCommand",
                           "BeginLoopCommand"):
                 step, i = self.loop_block(cmds, i)
+                steps.extend(step)
+                continue
+            if c.type == "BeginSwitchCommand":
+                step, i = self.switch_block(cmds, i)
                 steps.extend(step)
                 continue
             if c.type == "TryCommand":
@@ -361,7 +370,8 @@ class Translator:
         comment = self.pending_comment or c.comment
         self.pending_comment = ""
         list_var = self.var(c.attrs.get("v_LoopParameter", "")) if c.type == "BeginListLoopCommand" else ""
-        self.loop_lists.append(list_var)
+        # no OpenBots o elemento vai para outra variável: a lista mantém o nome
+        self.loop_lists.append("" if c.attrs.get("v_LoopItemVariable") else list_var)
         try:
             body, j, term = self.block(cmds, i + 1, ("EndLoopCommand",))
         finally:
@@ -375,7 +385,8 @@ class Translator:
         before: list[dict] = []
         if c.type == "BeginListLoopCommand":
             param = a.get("v_LoopParameter", "")
-            items, item_var = f"{list_var}_colecao", list_var
+            item_var = self.var(a["v_LoopItemVariable"]) if a.get("v_LoopItemVariable") else list_var
+            items = f"{list_var}_colecao"
             before = [self.step("set", "Lista do ciclo", variable=f"{list_var}_colecao",
                                 expr=f"(({self.collection(param)}) | parsejson) or []")]
             self.note("convertido", "ciclo sobre lista", c)
@@ -402,6 +413,27 @@ class Translator:
         self.pending_comment = comment
         return [*before, self.step("foreach", "Ciclo", items_expr=items, item_variable=item_var, parallel=1,
                           carry=carry or None, steps=body)], nxt
+
+    def switch_block(self, cmds: list[Command], i: int) -> tuple[list[dict], int]:
+        """Switch/Case do OpenBots: cadeia de condições (valor igual ao caso; 'Default' no fim)."""
+        c = cmds[i]
+        value = f"(({self.expr(c.attrs.get('v_SwitchValue', ''))}) | text)"
+        cases: list[tuple[str | None, list[dict]]] = []
+        j = i + 1
+        body, j, term = self.block(cmds, j, ("CaseCommand", "EndSwitchCommand"))  # passos antes do 1.º caso: ignorados
+        while term == "CaseCommand":
+            case = cmds[j].attrs.get("v_CaseValue", "")
+            body, j, term = self.block(cmds, j + 1, ("CaseCommand", "EndSwitchCommand"))
+            cases.append((None if case.lower() == "default" else case, body))
+        nxt = j + 1 if term == "EndSwitchCommand" else j
+        default = next((b for k, b in cases if k is None), [])
+        chain: list[dict] = default
+        for case, body in reversed([x for x in cases if x[0] is not None]):
+            self.counter += 1
+            chain = [{"id": f"s{self.counter}", "type": "if", "name": f"Caso {case}"[:200],
+                      "condition": f"{value} == (({self.expr(case)}) | text)", "then": body, "otherwise": chain}]
+        self.note("convertido", f"escolha (switch) com {len(cases)} caso(s)", c)
+        return chain, nxt
 
     def try_block(self, cmds: list[Command], i: int) -> tuple[list[dict], int]:
         c = cmds[i]
@@ -436,8 +468,9 @@ class Translator:
                     sub = json.loads(data)
                 except ValueError as exc:
                     raise _Unsupported("condição múltipla ilegível") from exc
-                rows = sub.get("v_IfActionParameterTable") or []
-                inner = Command(type="BeginIfCommand", attrs={"v_IfActionType": sub.get("v_IfActionType", "")},
+                rows = sub.get("v_IfActionParameterTable") or sub.get("v_ActionParameterTable") or []
+                kind_ = {"Value Compare": "Value"}.get(sub.get("v_IfActionType", ""), sub.get("v_IfActionType", ""))
+                inner = Command(type="BeginIfCommand", attrs={"v_IfActionType": kind_},
                                 tables={"v_IfActionParameterTable": [{k: ("" if v is None else str(v)) for k, v in r.items()} for r in rows]},
                                 line=c.line)
                 conds.append(f"({self.condition(inner)})")
@@ -467,6 +500,9 @@ class Translator:
                 self.note("aproximado", "'File Exists' só vê ficheiros criados nesta execução do fluxo", c)
             test = f"file_exists({json.dumps(name)})" if "{{" not in name else f"file_exists({self.expr(p.get('File Path', '').split(chr(92))[-1])})"
             return test if (p.get("True When") or "").lower().find("not") < 0 else f"not {test}"
+        if kind == "Folder Exists":
+            self.note("aproximado", "'Folder Exists' considerado sempre verdadeiro (os fluxos não usam pastas)", c)
+            return "true" if "not" not in (p.get("True When") or "").lower() else "false"
         if kind == "Error Occured":
             self.note("aproximado", "'Error Occured' convertido para 'houve um erro tratado anteriormente'", c)
             return "last_error is defined"
@@ -749,6 +785,10 @@ class Translator:
         if "config" in name.lower():
             self.note("ignorado", "leitura do Config.txt removida: as credenciais vêm do cofre", c)
             return [self.step("set", "Config.txt (removido)", variable=out, value="")]
+        if "{{" in name:
+            # nome variável: pode ser um ficheiro criado antes nesta execução
+            self.note("aproximado", f"leitura de '{name}': funciona se o fluxo o tiver criado nesta execução; senão fica vazio", c)
+            return [self.step("text_read", "Ler ficheiro", file=name, save_as=out, missing_ok=True)]
         self.note("aproximado", f"o ficheiro '{name}' vivia no servidor de bots; fica vazio — forneça os dados por API, SQL ou variável", c)
         return [self.step("set", "Ficheiro do servidor de bots (vazio)", variable=out, value=""),
                 self.step("log", "Aviso", level="WARNING",
@@ -831,7 +871,8 @@ class Translator:
     def c_GetDataRowValueCommand(self, c):
         out = self._out(c, "v_UserVariableName")
         row = self.expr(c.attrs.get("v_DataRowName", ""))
-        if (c.attrs.get("v_Option") or "Index").lower() == "index":
+        opt = (c.attrs.get("v_Option") or "Index").lower()
+        if "index" in opt:
             e = f"(({row}) | row_values)[{self.num_expr(c.attrs.get('v_DataValueIndex', '0'))}]"
         else:
             e = f"({row})[{self.expr(c.attrs.get('v_DataValueIndex', ''))}]"
@@ -860,12 +901,106 @@ class Translator:
 
     def c_RunTaskCommand(self, c):
         path = c.attrs.get("v_taskPath", "")
-        name = PureWindowsPath(path.replace("{Folder.ScriptPath}", "")).name
-        if any(k in name.lower() for k in CONFIG_SCRIPTS):
+        parts = PureWindowsPath(re.sub(r"\{(Folder\.[A-Za-z]+|ProjectPath)\}", "", path)).parts
+        name = parts[-1] if parts else ""
+        if any(k in path.lower() for k in CONFIG_SCRIPTS):
             self.note("ignorado", f"sub-robô '{name}' (lia credenciais do Config.txt) removido: as credenciais vêm do cofre", c)
             return []
+        sub = self.robot.subscripts.get(name.lower())
+        if sub is not None:
+            return self.inline(c, name, sub)
         raise _Unsupported(f"Chama o sub-robô '{name}'. Importe-o também e ligue os fluxos com uma regra 'Após outro bot', "
                            "ou copie os passos dele para aqui.")
+
+    def c_RegexReplaceCommand(self, c):
+        out = self._out(c, "v_applyToVariableName")
+        src = self.expr(c.attrs.get("v_InputValue", ""))
+        e = f"({src}) | regex_replace({json.dumps(c.attrs.get('v_Regex', ''))}, ({self.expr(c.attrs.get('v_ReplacementText', ''))}) | text)"
+        return self._set_expr(c, out, e, "Substituir (expressão regular)")
+
+    def c_RegexSplitCommand(self, c):
+        out = self._out(c, "v_applyToVariableName")
+        e = f"({self.expr(c.attrs.get('v_InputValue', ''))}) | regex_split({json.dumps(c.attrs.get('v_Regex', ''))})"
+        return self._set_expr(c, out, e, "Dividir (expressão regular)")
+
+    def c_GetExceptionMessageCommand(self, c):
+        out = self._out(c, "v_applyToVariableName")
+        return self._set_expr(c, out, "last_error | default('')", "Mensagem do erro")
+
+    def c_NewSecureStringCommand(self, c):
+        out = self._out(c, "v_applyToVariableName")
+        self.note("ignorado", f"segredo escrito no robô ('{out}') não copiado: use uma credencial do cofre", c)
+        return [self.step("set", "Segredo (removido)", variable=out, value="")]
+
+    def c_ThrowCommand(self, c):
+        self.note("convertido", "lançar erro", c)
+        return [self.step("fail", "Erro", message=self.tpl(c.attrs.get("v_ExceptionMessage", "")) or "erro lançado pelo robô")]
+
+    def c_RethrowCommand(self, c):
+        self.note("convertido", "relançar o erro", c)
+        return [self.step("fail", "Relançar erro", message="{{ last_error | default('erro') }}")]
+
+    def c_CreateDataTableCommand(self, c):
+        out = self._out(c, "v_applyToVariableName")
+        return self._set_expr(c, out, "[]", "Nova tabela")
+
+    def c_AddDataRowCommand(self, c):
+        table = self.var(c.attrs.get("v_DataTable", ""))
+        pairs = ", ".join(f"{json.dumps(r.get('Column Name', ''))}: ({self.expr(r.get('Data', ''))})"
+                          for r in c.tables.get("v_DataRowDataTable", []))
+        self.note("convertido", "acrescentar linha à tabela", c)
+        return [self.step("append", "Acrescentar linha", variable=table, expr="{" + pairs + "}")]
+
+    def c_FilterDataTableCommand(self, c):
+        out = self._out(c, "v_applyToVariableName")
+        m = re.fullmatch(r"\(\s*([^,]+?)\s*,(.*)\)", (c.attrs.get("v_SearchItem") or "").strip(), re.S)
+        if not m:
+            raise _Unsupported(f"filtro de tabela '{c.attrs.get('v_SearchItem', '')}'")
+        col, val = m.group(1), m.group(2)
+        e = (f"({self.expr(c.attrs.get('v_DataTable', ''))}) | selectattr({json.dumps(col)}, 'equalto', "
+             f"({self.expr(val)})) | list")
+        self.note("aproximado", "filtro de tabela por valor igual na coluna; confirme se o original procurava texto parcial", c)
+        return [self.step("set", "Filtrar tabela", variable=out, expr=e)]
+
+    def inline(self, c: Command, name: str, sub: Robot) -> list[dict[str, Any]]:
+        """Run Task de um script do mesmo projeto: os passos são inseridos aqui. As variáveis dos fluxos são
+        partilhadas, por isso os argumentos In/Out passam a atribuições antes e depois dos passos."""
+        if name.lower() in self.inline_stack or len(self.inline_stack) >= 6:
+            raise _Unsupported(f"sub-robô '{name}' chamado recursivamente")
+        args = c.tables.get("v_ArgumentAssignments", [])
+        before, after = [], []
+        for a in args:
+            arg, val = a.get("ArgumentName", ""), a.get("ArgumentValue", "")
+            if not arg:
+                continue
+            same = self.var(arg) == self.var(val) if val.strip().startswith("{") else False
+            if a.get("ArgumentDirection", "In").lower() == "out":
+                if val and not same:
+                    after.append(self.step("set", f"Argumento {self.var(arg)}", variable=self.var(val), expr=self.var(arg)))
+            elif not same:
+                before.append(self.step("set", f"Argumento {self.var(arg)}", variable=self.var(arg), value=self.tpl(val)))
+        for k, v in sub.variables.items():
+            self.declared.setdefault(self.var(k), v)
+        self.note("convertido", f"sub-robô '{name}' incorporado ({len(sub.commands)} comandos)", c)
+        cmds = [x for x in sub.commands if x.enabled]
+        for x in cmds:
+            x.type = ALIASES.get(x.type, x.type)
+        self.inline_stack.append(name.lower())
+        saved = self.continue_on_error, self.pending_comment
+        self.continue_on_error, self.pending_comment = False, ""
+        try:
+            body, i, _ = self.block(cmds, 0, ())
+            while i < len(cmds):
+                more, i, _ = self.block(cmds, i + 1, ())
+                body.extend(more)
+        finally:
+            self.inline_stack.pop()
+            self.continue_on_error, self.pending_comment = saved
+            self.cmd = c
+        if any(x.type == "StopTaskCommand" for x in cmds):
+            self.note("aproximado", f"'Stop Current Task' dentro do sub-robô '{name}' termina agora o fluxo inteiro", c)
+        start = self.step("log", f"Sub-robô {name}", message=f"início do sub-robô {name}")
+        return [*before, start, *body, *after]
 
     def c_StartProcessCommand(self, c):
         raise _Unsupported(f"Executa um programa no Windows ({PureWindowsPath(c.attrs.get('v_ProgramName', '')).name}).")
@@ -923,4 +1058,5 @@ def convert(robot: Robot, test_email: str = "") -> ConversionResult:
         definition["persistent_files"] = sorted(tr.persistent)
     return ConversionResult(name=title[:200], key=suggest_key(robot.name), source_format=robot.source_format,
                             definition=definition, report=tr.report, credentials=dict(sorted(tr.credentials.items())),
-                            risk_level=risk, notes=robot.notes)
+                            risk_level=risk, notes=robot.notes,
+                            data_files={n: robot.data_files[n] for n in sorted(tr.persistent) if n in robot.data_files})

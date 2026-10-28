@@ -24,6 +24,8 @@ class Robot:
     variables: dict[str, str] = field(default_factory=dict)
     files: list[str] = field(default_factory=list)  # nomes dos ficheiros lidos
     notes: list[str] = field(default_factory=list)
+    subscripts: dict[str, "Robot"] = field(default_factory=dict)  # outros scripts do projeto (nome em minúsculas)
+    data_files: dict[str, bytes] = field(default_factory=dict)  # ficheiros de dados do projeto (nome do ficheiro)
 
 
 def table_rows_as_pairs(rows: list[dict[str, Any]]) -> dict[str, str]:

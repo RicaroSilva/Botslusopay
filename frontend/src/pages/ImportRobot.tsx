@@ -10,7 +10,15 @@ interface Conversion {
   definition: Record<string, unknown>; report: ReportRow[]; stats: Record<string, number>;
   credentials: { name: string; kind: string; exists: boolean }[]; notes: string[];
   valid: boolean; validation_error: string | null; key_taken: boolean;
+  data_files: { name: string; size: number; content_b64: string }[];
 }
+interface BatchRow {
+  file: string; key?: string; name?: string; status: string; stats?: Record<string, number>; version?: number;
+  missing_credentials?: string[]; error?: string; persistent_files?: string[]; files_loaded?: string[];
+}
+const BATCH_STATUS: Record<string, string> = {
+  criado: "✅ criado", nova_versao: "✅ nova versão", faltam_credenciais: "⚠️ faltam credenciais", erro: "❌ erro",
+};
 
 const LEVEL_LABEL: Record<string, string> = {
   convertido: "Convertido", aproximado: "Aproximado — rever", ignorado: "Ignorado (não necessário)",
@@ -59,6 +67,7 @@ export function ImportRobot() {
         key, name, category: "Importado", risk_level: conv.risk_level, requires_approval: approval, timeout_seconds: 7200,
         description: `Convertido automaticamente de ${file?.name} (${conv.source_format}). Rever antes de usar.`,
         source_bot: file?.name ?? "", definition: conv.definition,
+        persistent_contents: Object.fromEntries(conv.data_files.map((f) => [f.name, f.content_b64])),
         migration_notes: [
           `Conversão: ${conv.stats.convertido ?? 0} convertidos, ${conv.stats.aproximado ?? 0} aproximados, ${conv.stats.nao_convertivel ?? 0} não convertíveis.`,
           ...problems.slice(0, 20).map((r) => `Linha ${r.line} (${r.command}): ${r.message}`),
@@ -98,6 +107,7 @@ export function ImportRobot() {
           <button className="btn btn-primary" disabled={!file || busy} onClick={convert}>{busy ? "A converter…" : "Converter"}</button>
         </div>
       </Card>
+      <BatchImport testEmail={testEmail} />
       <ErrorBox error={error} />
       {conv && (
         <>
@@ -118,6 +128,12 @@ export function ImportRobot() {
             )}
             {!conv.valid && <p className="alert alert-error">Estrutura inválida: {conv.validation_error}</p>}
             {conv.notes.map((n) => <p key={n} className="alert alert-info">{n}</p>)}
+            {conv.data_files.length > 0 && (
+              <p className="alert alert-info">
+                Ficheiros de controlo/dados encontrados no projeto, carregados como ficheiros persistentes ao criar o fluxo:{" "}
+                {conv.data_files.map((f) => `${f.name} (${f.size} bytes)`).join(", ")}.
+              </p>
+            )}
             <h3>Credenciais necessárias</h3>
             {conv.credentials.length ? (
               <ul>
@@ -177,5 +193,69 @@ export function ImportRobot() {
         </>
       )}
     </>
+  );
+}
+
+/** Vários robôs de uma vez: um .zip com a pasta dos robôs (cada .xml e cada pasta de projeto é um robô). */
+function BatchImport({ testEmail }: { testEmail: string }) {
+  const [file, setFile] = useState<File | null>(null);
+  const [approval, setApproval] = useState(true);
+  const [rows, setRows] = useState<BatchRow[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function run() {
+    if (!file) return;
+    setBusy(true); setError(null); setRows(null);
+    try {
+      setRows(await api.post<BatchRow[]>("/api/flows/import-batch", {
+        content_b64: toBase64(await file.arrayBuffer()), test_email: testEmail, approval_for_high_risk: approval,
+      }));
+    } catch (e) { setError((e as ApiError).message); }
+    finally { setBusy(false); }
+  }
+
+  const missing = [...new Set((rows ?? []).flatMap((r) => r.missing_credentials ?? []))];
+  return (
+    <Card title="Importar vários robôs de uma vez">
+      <p className="muted small">
+        Comprima a pasta dos robôs em <code>.zip</code> (no Windows: botão direito → Enviar para → Pasta comprimida).
+        Cada <code>.xml</code> e cada pasta de projeto passa a um fluxo <strong>desativado</strong>; os ficheiros de
+        controlo que estiverem nas pastas são carregados como ficheiros persistentes. O <code>Config.txt</code> nunca é
+        lido. Pode repetir: os fluxos que já existem recebem uma nova versão e os ficheiros persistentes não são substituídos.
+      </p>
+      <div className="form-grid">
+        <label>Ficheiro .zip<input type="file" accept=".zip" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setRows(null); }} /></label>
+        <label className="check"><input type="checkbox" checked={approval} onChange={(e) => setApproval(e.target.checked)} />
+          Exigir aprovação nos robôs de risco elevado</label>
+        <button className="btn btn-primary" disabled={!file || busy} onClick={run}>{busy ? "A importar…" : "Converter e importar todos"}</button>
+      </div>
+      <ErrorBox error={error} />
+      {missing.length > 0 && (
+        <p className="alert alert-warn">
+          Crie estas credenciais em <Link to="/admin">Administração → Credenciais</Link> e importe de novo o mesmo .zip:{" "}
+          {missing.map((m) => <code key={m}>{m} </code>)}
+        </p>
+      )}
+      {rows && (
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Robô</th><th>Resultado</th><th>Conversão</th><th>Ficheiros persistentes</th></tr></thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.file} className={r.status === "erro" ? "row-bad" : ""}>
+                  <td>{r.key && ["criado", "nova_versao"].includes(r.status) ? <Link to={`/flows/${r.key}`}>{r.name}</Link> : (r.name ?? r.file)}</td>
+                  <td>{BATCH_STATUS[r.status] ?? r.status}{r.error && <div className="muted small">{r.error}</div>}
+                    {r.missing_credentials && <div className="muted small">{r.missing_credentials.join(", ")}</div>}</td>
+                  <td className="small">{r.stats ? `${r.stats.convertido ?? 0} conv. · ${r.stats.aproximado ?? 0} aprox. · ${r.stats.nao_convertivel ?? 0} não conv.` : "—"}</td>
+                  <td className="small">{(r.persistent_files ?? []).length
+                    ? `${r.persistent_files!.length} (${(r.files_loaded ?? []).length} carregados do projeto)` : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Card>
   );
 }

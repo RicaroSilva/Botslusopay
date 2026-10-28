@@ -153,6 +153,17 @@ def regex_find(v: Any, pattern: str, group: int = 0) -> str:
     return m.group(int(group or 0)) or ""
 
 
+def regex_replace(v: Any, pattern: str, replacement: Any = "") -> str:
+    """Substituição com expressão regular; aceita referências a grupos no estilo .NET ($1, ${nome})."""
+    repl = re.sub(r"\$\{(\w+)\}|\$(\d+)", lambda m: f"\\g<{m.group(1) or m.group(2)}>",
+                  to_text(replacement).replace("\\", "\\\\"))
+    return re.sub(pattern, repl, to_text(v))
+
+
+def regex_split(v: Any, pattern: str) -> list[str]:
+    return re.split(pattern, to_text(v))
+
+
 def jsonpath(v: Any, path: str) -> Any:
     """JSONPath simples: $.a.b, $..chave, a[0].b, items[*].id. Filtros [?(...)] não são suportados."""
     data = parse_json(v)
@@ -245,6 +256,8 @@ def make_env() -> SandboxedEnvironment:
     env.filters["after"] = text_after
     env.filters["before"] = text_before
     env.filters["regex"] = regex_find
+    env.filters["regex_replace"] = regex_replace
+    env.filters["regex_split"] = regex_split
     env.filters["jsonpath"] = jsonpath
     env.filters["split_text"] = split_text
     env.filters["add_time"] = add_time

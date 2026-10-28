@@ -227,7 +227,7 @@ def test_openbots_zip_project():
         z.writestr("Proj/Main.obscript", json.dumps({"Commands": [{"ScriptCommand": {"CommandName": "PauseCommand"}}]}))
         z.writestr("Proj/Outro.obscript", json.dumps({"Commands": []}))
     robot = read_robot(buf.getvalue(), "Proj.zip")
-    assert robot.name == "Main.obscript" and any("Outro.obscript" in n for n in robot.notes)
+    assert robot.name == "Proj" and "outro.obscript" in robot.subscripts
 
 
 def test_rejects_garbage_and_xxe():
@@ -328,3 +328,119 @@ def test_control_files_become_persistent(tmp_path):
     assert out["status"] == "SUCCEEDED", out
     assert seen[0].endswith("after=5")
     assert (tmp_path / "ultimo id.txt").read_text(encoding="utf-8") == "7"
+
+
+def _ob(name, line, **attrs):
+    return {"ScriptCommand": {"$type": f"OpenBots.Commands.X.{name}, OpenBots.Commands.Core", "CommandName": name,
+                              "LineNumber": line, "IsCommented": False, "CommandEnabled": True, **attrs}}
+
+
+def _ob_block(begin, children):
+    return {**begin, "AdditionalScriptCommands": children}
+
+
+def _openbots_project(zip_names_cp850=False):
+    import io
+    import zipfile
+
+    out = "v_OutputUserVariableName"
+    main = {"Commands": [
+        _ob("AddCodeCommentCommand", 1, v_Comment="Projeto de teste"),
+        _ob("RunTaskCommand", 2, v_TaskPath="{Folder.ScriptPath}\\Recolha das Configurações\\Main.obscript"),
+        _ob("NewSecureStringCommand", 3, v_Input="segredo-literal", **{out: "{vSenha}"}),
+        _ob("ReadTextFileCommand", 4, v_FilePath="{ProjectPath}\\Relatórios\\Último id.txt", **{out: "{vUltimo}"}),
+        _ob("RunTaskCommand", 5, v_TaskPath="{ProjectPath}\\Processa.obscript", v_AssignArguments=True,
+            v_ArgumentAssignments=[
+                {"ArgumentName": "{vInicio}", "ArgumentValue": "{vUltimo}", "ArgumentDirection": "In"},
+                {"ArgumentName": "{vFim}", "ArgumentValue": "{vUltimo}", "ArgumentDirection": "Out"}]),
+        _ob("WriteCreateTextFileCommand", 6, v_FilePath="{ProjectPath}\\Relatórios\\Último id.txt",
+            v_TextToWrite="{vUltimo}", v_Overwrite="Overwrite"),
+    ], "Variables": [{"VariableName": "{vUltimo}", "VariableValue": ""}]}
+    sub = {"Commands": [
+        _ob("ExecuteRESTAPICommand", 1, v_BaseURL="https://dev.lusopay.com:8444",
+            v_APIEndPoint="/web_dev/api/users?after={vInicio}", v_APIMethodType="GET", v_RESTParameters=[],
+            v_AdvancedParameters=[{"Parameter Name": "Authorization", "Parameter Value": "{vSenha}",
+                                   "Parameter Type": "HttpHeader"}], **{out: "{vJson}"}),
+        _ob("RegexReplaceCommand", 2, v_InputText="{vJson}", v_Regex="[\\[\\]\"]", v_ReplacementText="",
+            **{out: "{vTexto}"}),
+        _ob("SplitTextCommand", 3, v_InputText="{vTexto}", v_SplitCharacter=",", **{out: "{vIds}"}),
+        _ob("SetVariableCommand", 4, v_Input="{vInicio}", **{out: "{vFim}"}),
+        _ob_block(_ob("LoopCollectionCommand", 5, v_LoopParameter="{vIds}", **{out: "{vId}"}), [
+            _ob_block(_ob("BeginSwitchCommand", 6, v_SwitchValue="{vId}"), [
+                _ob("CaseCommand", 7, v_CaseValue="13"),
+                _ob("ThrowCommand", 8, v_ExceptionMessage="id 13 proibido"),
+                _ob("CaseCommand", 9, v_CaseValue="Default"),
+                _ob("SetVariableCommand", 10, v_Input="{vId}", **{out: "{vFim}"}),
+                _ob("EndSwitchCommand", 11)]),
+            _ob("EndLoopCommand", 12)]),
+    ]}
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr("Robots/Projeto X/project.obconfig", json.dumps({"ProjectName": "Projeto X", "Main": "Main.obscript"}))
+        z.writestr("Robots/Projeto X/Main.obscript", json.dumps(main))
+        z.writestr("Robots/Projeto X/Processa.obscript", json.dumps(sub))
+        rel = "Robots/Projeto X/Relatórios/Último id.txt"
+        if zip_names_cp850:  # como a "Pasta comprimida" do Windows: nomes em cp850, sem a marca UTF-8
+            class Cp850Info(zipfile.ZipInfo):
+                def _encodeFilenameFlags(self):  # noqa: N802
+                    return self.filename.encode("cp850"), self.flag_bits & ~0x800
+
+            z.writestr(Cp850Info(rel), "10")
+        else:
+            z.writestr(rel, "10")
+        z.writestr("Robots/Config.txt", "RPATaskt,Basic nao-ler,")
+        z.writestr("Robots/OK Outro.xml", script(cmd("PauseCommand", 1)).decode())
+    return buf.getvalue()
+
+
+@pytest.mark.parametrize("cp850", [False, True])
+def test_openbots_project_with_subscript_runs(tmp_path, cp850):
+    import sys
+    from pathlib import Path
+
+    from botmanager.flows.converters.batch import split_robots
+
+    robots = dict(split_robots(_openbots_project(cp850)))
+    assert sorted(robots) == ["OK Outro.xml", "Projeto X.zip"]
+    res = convert(read_robot(robots["Projeto X.zip"], "Projeto X.zip"))
+    assert res.name == "Projeto X" and res.key == "projeto-x-importado"
+    assert res.definition["persistent_files"] == ["Último id.txt"] and res.data_files == {"Último id.txt": b"10"}
+    assert "segredo-literal" not in json.dumps(res.definition)
+    assert res.stats.get("nao_convertivel", 0) == 0, [r for r in res.report if r.level == "nao_convertivel"]
+    validate_flow(res.definition, res.credentials, [])
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "worker"))
+    import httpx
+    from lusopay_worker.flowengine import Engine
+
+    seen = []
+
+    def api(r):
+        seen.append(str(r.url))
+        return httpx.Response(200, json=["11", "12"])
+
+    (tmp_path / "Último id.txt").write_text("10", encoding="utf-8")
+    creds = {"cyclos-dev": {"kind": "http_basic", "username": "u", "password": "p"}}
+    out = Engine({"run_id": "r", "flow": {"version": 1, "definition": res.definition}, "credentials": creds,
+                  "allowed_hosts": []}, tmp_path, emit=lambda line: None,
+                 http_client=httpx.Client(transport=httpx.MockTransport(api))).run()
+    assert out["status"] == "SUCCEEDED", out
+    assert seen[0].endswith("after=10")
+    assert (tmp_path / "Último id.txt").read_text(encoding="utf-8") == "12"
+
+
+def test_batch_import_endpoint(env, clients):
+    a = clients["admin"]
+    a.post("/api/admin/credentials", json={"name": "cyclos-dev", "kind": "http_basic",
+                                           "fields": {"username": "u", "password": "p"}})
+    body = {"content_b64": base64.b64encode(_openbots_project()).decode(), "test_email": "t@lusopay.com"}
+    rows = {r["file"]: r for r in a.post("/api/flows/import-batch", json=body).json()}
+    assert rows["Projeto X.zip"]["status"] == "criado" and rows["OK Outro.xml"]["status"] == "criado"
+    url = "/api/flows/projeto-x-importado/files/Último id.txt"
+    assert a.get(url).content == b"10"
+    assert clients["admin"].get("/api/bots/projeto-x-importado").json()["enabled"] is False
+    # reimportar: nova versão e o ficheiro persistente atual não é substituído
+    a.put(url, json={"content_b64": base64.b64encode(b"55").decode()})
+    rows = {r["file"]: r for r in a.post("/api/flows/import-batch", json=body).json()}
+    assert rows["Projeto X.zip"]["status"] == "nova_versao" and a.get(url).content == b"55"
+    assert clients["operator"].post("/api/flows/import-batch", json=body).status_code == 403
