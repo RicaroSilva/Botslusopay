@@ -450,3 +450,11 @@ def test_single_convert_refuses_zip_with_many_robots(env, clients):
     body = {"filename": "Robots.zip", "content_b64": base64.b64encode(_openbots_project()).decode()}
     r = clients["admin"].post("/api/flows/convert", json=body)
     assert r.status_code == 422 and "Importar vários" in r.json()["detail"]
+
+
+def test_datetime_now_parts_in_templates():
+    from botmanager.flows.converters.model import Robot
+    from botmanager.flows.converters.translate import Translator
+
+    tr = Translator(Robot(name="x", source_format="taskt", commands=[]))
+    assert tr.tpl("erro_{DateTime.Now.Year}-{DateTime.Now.Month}.txt") == "erro_{{ now().year }}-{{ now().month }}.txt"

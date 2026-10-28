@@ -194,7 +194,7 @@ class Translator:
         self.referenced.add(name)
         return name
 
-    _TOKEN = re.compile(r"\{([A-Za-z_][\w\-]*(?:\.[A-Za-z_]+)?)\}|\[(v[\w\-]*)\]")
+    _TOKEN = re.compile(r"\{([A-Za-z_][\w\-]*(?:\.[A-Za-z_]+){0,2})\}|\[(v[\w\-]*)\]")
 
     def _known(self, name: str) -> bool:
         return self.var(name) in self.declared or self.var(name) in self.referenced
