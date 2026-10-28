@@ -1,9 +1,16 @@
 @echo off
-rem Arranca o Bot Manager (backend + worker) e abre http://localhost:8000/admin. Nao atualiza nada
-rem (para atualizar: arrancar.bat). O token do worker fica em worker.token, nesta pasta (fora do Git).
+rem Atualiza (git pull, dependencias, base de dados, frontend) e arranca o Bot Manager (backend + worker),
+rem depois abre http://localhost:8000/admin. Sem internet/Git arranca na mesma com a versao atual.
+rem O token do worker fica em worker.token, nesta pasta (fora do Git).
+rem Corre a partir de uma copia temporaria: o git pull pode alterar este ficheiro enquanto corre.
+if not "%~1"=="_copia" (
+  copy /y "%~f0" "%TEMP%\bm-iniciar.bat" >nul
+  "%TEMP%\bm-iniciar.bat" _copia "%~dp0"
+  exit /b
+)
 setlocal
-cd /d "%~dp0"
-set "ROOT=%~dp0"
+set "ROOT=%~2"
+cd /d "%ROOT%"
 
 if not exist "backend\.venv\Scripts\activate.bat" (
   echo Nao encontrei backend\.venv. Instale primeiro o backend.
@@ -16,6 +23,21 @@ if not exist "worker.token" (
   set /p "TOKEN=Cole aqui o token do worker e carregue Enter: "
   call :gravar_token
 )
+
+echo === A atualizar o codigo ===
+git pull || echo AVISO: git pull falhou; arranca com a versao atual.
+call backend\.venv\Scripts\activate.bat
+echo === A instalar dependencias ===
+python -m pip install -q -e backend -e worker || goto erro
+echo === A atualizar a base de dados ===
+pushd backend
+alembic upgrade head || (popd & goto erro)
+popd
+echo === A compilar o frontend ===
+pushd frontend
+call npm install --no-audit --no-fund --loglevel=error || (popd & goto erro)
+call npm run build || (popd & goto erro)
+popd
 
 rem backend (janela "Bot Manager - backend")
 start "Bot Manager - backend" cmd /k "cd /d "%ROOT%backend" && call .venv\Scripts\activate.bat && python -m uvicorn --factory botmanager.main:create_app --port 8000"
@@ -37,6 +59,12 @@ start "Bot Manager - worker" cmd /k "cd /d "%ROOT%worker" && call ..\backend\.ve
 
 start "" http://localhost:8000/admin
 exit /b 0
+
+:erro
+echo.
+echo ERRO: o passo acima falhou. Nada foi arrancado. Copie as mensagens acima.
+pause
+exit /b 1
 
 :gravar_token
 if "%TOKEN%"=="" (
