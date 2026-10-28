@@ -86,15 +86,16 @@ def test_convert_taskt_saldos_like_script():
     assert "ZmFrZTpmYWtl" not in flat and "NaoCopiar123" not in flat and "valor-secreto" not in flat
     assert res.credentials == {"cyclos-producao": "http_basic", "smtp-lusopay": "smtp"}
     steps = res.definition["steps"]
-    assert [s["type"] for s in steps] == ["set", "http_request", "set", "set", "text_write", "foreach", "email", "fail"]
+    assert [s["type"] for s in steps] == ["set", "http_request", "set", "set", "text_write", "set", "foreach", "email", "fail"]
     # o comentário dá nome ao passo seguinte que é gerado (o sub-robô de configuração é removido)
     assert steps[0]["name"] == "Recolhe saldos"
     http = steps[1]
     assert http["credential"] == "cyclos-producao"
     assert "Authorization" not in http.get("headers", {})
-    loop = steps[5]
+    loop = steps[6]
+    assert steps[5]["variable"] == "vLista_colecao" and loop["items_expr"] == "vLista_colecao"
     assert loop["item_variable"] == "vLista" and "vTotal" in loop["carry"]
-    email = steps[6]
+    email = steps[7]
     assert "email_teste" in email["to"][0] and email["attachments"] == ["Saldos a {{ vHoje }}.csv"]
     assert res.definition["variables"]["email_teste"] == "teste@lusopay.com"
     assert steps[-1]["type"] == "fail" and "Selenium" in steps[-1]["message"]
@@ -276,3 +277,54 @@ def test_delete_flow(env, clients):
     assert a.delete("/api/flows/com-historico").json() == {"result": "archived"}
     assert "com-historico" not in [b["key"] for b in a.get("/api/bots").json()]
     assert a.get(f"/api/runs/{rid}").status_code == 200  # o histórico mantém-se
+
+
+CONTROLO = script(
+    cmd("BeginIfCommand", 1, v_IfActionType="File Exists",
+        children=table("v_IfActionParameterTable", [
+            {"Parameter Name": "File Path", "Parameter Value": "{Folder.ScriptPath}Listas\\ultimo id.txt"},
+            {"Parameter Name": "True When", "Parameter Value": "It Does Not Exist"}])),
+    cmd("StopTaskCommand", 2),
+    cmd("EndIfCommand", 3),
+    cmd("ReadTextFileCommand", 4, v_FilePath="{Folder.ScriptPath}Listas\\ultimo id.txt", v_userVariableName="vUltimo"),
+    cmd("RESTCommand", 5, v_BaseURL="https://dev.lusopay.com:8444", v_APIEndPoint="/web_dev/api/users?after={vUltimo}",
+        v_APIMethodType="GET", v_userVariableName="vJson"),
+    cmd("ParseJSONArrayCommand", 6, v_InputValue="{vJson}", v_applyToVariableName="vLista"),
+    cmd("VariableCommand", 7, v_userVariableName="vIndex", v_Input="0"),
+    cmd("BeginListLoopCommand", 8, v_LoopParameter="{vLista}"),
+    # dentro do ciclo, {vLista} continua a designar a lista inteira (como no taskt)
+    cmd("GetListItemCommand", 9, v_ListName="{vLista}", v_ItemIndex="{vIndex}", v_UserVariableName="vId"),
+    cmd("WriteTextFileCommand", 10, v_FilePath="{Folder.ScriptPath}Listas\\ultimo id.txt", v_TextToWrite="{vId}",
+        v_Overwrite="Overwrite"),
+    cmd("MathCalculationCommand", 11, v_InputValue="{vIndex}+1", v_applyToVariableName="vIndex"),
+    cmd("EndLoopCommand", 12),
+    variables=("vUltimo", "vJson", "vLista", "vIndex", "vId"),
+)
+
+
+def test_control_files_become_persistent(tmp_path):
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "worker"))
+    import httpx
+    from lusopay_worker.flowengine import Engine
+
+    res = convert(read_robot(CONTROLO, "OK Controlo.xml"))
+    assert res.definition["persistent_files"] == ["ultimo id.txt"]
+    assert "Ficheiros persistentes" in res.report[0].message
+    validate_flow(res.definition, res.credentials, [])
+    (tmp_path / "ultimo id.txt").write_text("5", encoding="utf-8")
+    seen = []
+
+    def api(r):
+        seen.append(str(r.url))
+        return httpx.Response(200, json=["6", "7"])
+
+    creds = {"cyclos-dev": {"kind": "http_basic", "username": "u", "password": "p"}}
+    eng = Engine({"run_id": "r", "flow": {"version": 1, "definition": res.definition}, "credentials": creds,
+                  "allowed_hosts": []}, tmp_path, emit=lambda line: None, http_client=httpx.Client(transport=httpx.MockTransport(api)))
+    out = eng.run()
+    assert out["status"] == "SUCCEEDED", out
+    assert seen[0].endswith("after=5")
+    assert (tmp_path / "ultimo id.txt").read_text(encoding="utf-8") == "7"

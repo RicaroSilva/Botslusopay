@@ -5,6 +5,7 @@ import { useAuth, hasRole } from "../auth";
 import { Card, ErrorBox } from "../components/ui";
 import { SPEC_BY_TYPE, STEP_SPECS, newStepId, type FieldSpec } from "../flowSteps";
 import { fmtDate } from "../format";
+import { FlowFiles } from "./FlowFiles";
 import type { Bot } from "../types";
 
 type Step = Record<string, unknown> & { id: string; type: string; name?: string };
@@ -13,7 +14,7 @@ interface FlowData {
   bot: Bot;
   current_version: number | null;
   version: number | null;
-  definition: { description?: string; variables?: Record<string, unknown>; steps: Step[] } | null;
+  definition: { description?: string; variables?: Record<string, unknown>; persistent_files?: string[]; steps: Step[] } | null;
   versions: { version: number; comment: string; created_at: string; created_by: string | null }[];
 }
 
@@ -237,6 +238,8 @@ export function FlowEditor() {
   const [meta, setMeta] = useState({ ...EMPTY_META });
   const [steps, setSteps] = useState<Step[]>([]);
   const [description, setDescription] = useState("");
+  // resto da definição (variáveis, ficheiros persistentes…) que o editor visual não mostra mas tem de manter
+  const [rest, setRest] = useState<Record<string, unknown>>({});
   const [data, setData] = useState<FlowData | null>(null);
   const [credentials, setCredentials] = useState<CredentialRow[]>([]);
   const [comment, setComment] = useState("");
@@ -251,6 +254,8 @@ export function FlowEditor() {
     setData(d);
     setSteps((d.definition?.steps as Step[]) ?? []);
     setDescription(d.definition?.description ?? "");
+    const { description: _d, steps: _s, ...others } = d.definition ?? { steps: [] };
+    setRest(others);
     const b = d.bot;
     setMeta({
       key: b.key, name: b.name, description: b.description, category: b.category, risk_level: b.risk_level,
@@ -268,8 +273,14 @@ export function FlowEditor() {
 
   const definition = () => {
     if (jsonMode) return JSON.parse(jsonText);
-    return { description, steps: clean(steps) };
+    return buildDefinition();
   };
+  const buildDefinition = () => {
+    const def: Record<string, unknown> = { ...rest, description, steps: clean(steps) };
+    if (!(def.persistent_files as string[] | undefined)?.length) delete def.persistent_files;
+    return def;
+  };
+  const persistentNames = (rest.persistent_files as string[] | undefined) ?? [];
 
   async function validate() {
     setError(null); setInfo(null);
@@ -299,9 +310,12 @@ export function FlowEditor() {
   }
 
   const toggleJson = () => {
-    if (!jsonMode) setJsonText(JSON.stringify({ description, steps: clean(steps) }, null, 2));
+    if (!jsonMode) setJsonText(JSON.stringify(buildDefinition(), null, 2));
     else {
-      try { const d = JSON.parse(jsonText); setSteps(d.steps ?? []); setDescription(d.description ?? ""); }
+      try {
+        const { description: d, steps: st, ...others } = JSON.parse(jsonText);
+        setSteps(st ?? []); setDescription(d ?? ""); setRest(others);
+      }
       catch { setError("JSON inválido"); return; }
     }
     setJsonMode(!jsonMode);
@@ -387,6 +401,10 @@ export function FlowEditor() {
         <label>Comentário da versão<input value={comment} maxLength={300} placeholder="o que mudou?"
           onChange={(e) => setComment(e.target.value)} /></label>
       </Card>
+      {!isNew && key && (
+        <FlowFiles flowKey={key} names={persistentNames} canEdit={!viewingOld}
+          onNamesChange={(n) => setRest({ ...rest, persistent_files: n })} />
+      )}
       {data && (
         <Card title="Versões">
           <table>

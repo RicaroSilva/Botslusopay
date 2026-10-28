@@ -238,6 +238,127 @@ def delete_flow(key: str, request: Request, user: User = Depends(require_role(Ro
     return {"result": outcome}
 
 
+# ------------------------------------------------------------------ ficheiros persistentes
+
+FLOW_FILE_MAX_BYTES = 5 * 1024 * 1024
+
+
+class FlowFileIn(BaseModel):
+    content_b64: str = Field(max_length=8_000_000)
+
+
+def _check_file_name(name: str) -> str:
+    from ..flows.schema import FILE_NAME_RE
+
+    if not FILE_NAME_RE.match(name) or name.startswith(".") or ".." in name:
+        raise HTTPException(422, "nome de ficheiro inválido")
+    return name
+
+
+def _declared_files(db: Session, bot: Bot) -> list[str]:
+    fv = service.get_version(db, bot, bot.current_flow_version)
+    return list((fv.definition if fv else {}).get("persistent_files") or [])
+
+
+@router.get("/{key}/files")
+def list_flow_files(key: str, request: Request, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    from ..models import FlowFile
+
+    bot = _flow_bot(db, key)
+    ensure_bot_permission(db, user, bot, Permission.VIEW, request)
+    stored = {f.name: f for f in db.scalars(select(FlowFile).where(FlowFile.bot_id == bot.id))}
+    declared = _declared_files(db, bot)
+    out = []
+    for name in sorted(set(declared) | set(stored)):
+        f = stored.get(name)
+        out.append({"name": name, "declared": name in declared, "exists": f is not None,
+                    "size_bytes": len(f.content) if f else 0, "updated_at": f.updated_at.isoformat() if f else None,
+                    "updated_by": f.updated_by if f else None, "has_previous": bool(f and f.previous_content is not None)})
+    return out
+
+
+@router.get("/{key}/files/{name}")
+def download_flow_file(key: str, name: str, request: Request, previous: bool = False,
+                       user: User = Depends(current_user), db: Session = Depends(get_db)):
+    from urllib.parse import quote
+
+    from fastapi import Response
+
+    from ..models import FlowFile
+
+    bot = _flow_bot(db, key)
+    ensure_bot_permission(db, user, bot, Permission.VIEW, request)
+    f = db.scalar(select(FlowFile).where(FlowFile.bot_id == bot.id, FlowFile.name == name))
+    data = (f.previous_content if previous else f.content) if f else None
+    if data is None:
+        raise HTTPException(404, "ficheiro não encontrado")
+    return Response(content=data, media_type="application/octet-stream",
+                    headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(name)}"})
+
+
+@router.put("/{key}/files/{name}")
+def put_flow_file(key: str, name: str, body: FlowFileIn, request: Request, user: User = Depends(current_user),
+                  db: Session = Depends(get_db)):
+    import base64
+    import binascii
+
+    bot = _flow_bot(db, key)
+    ensure_bot_permission(db, user, bot, Permission.CONFIGURE, request)
+    _check_file_name(name)
+    try:
+        data = base64.b64decode(body.content_b64, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise HTTPException(422, "conteúdo inválido") from exc
+    if len(data) > FLOW_FILE_MAX_BYTES:
+        raise HTTPException(413, "ficheiro demasiado grande (máx. 5 MB)")
+    from ..models import Run
+
+    if db.scalar(select(Run.id).where(Run.bot_id == bot.id, Run.status == "RUNNING")):
+        raise HTTPException(409, "o fluxo está em execução; aguarde que termine")
+    save_flow_file(db, bot, name, data, f"user:{user.username}")
+    audit(db, "user", user.username, "flow.file_updated", "bot", bot.id, details={"file": name, "size": len(data)},
+          ip=client_ip(request))
+    db.commit()
+    return {"ok": True}
+
+
+@router.delete("/{key}/files/{name}")
+def delete_flow_file(key: str, name: str, request: Request, user: User = Depends(current_user),
+                     db: Session = Depends(get_db)):
+    from ..models import FlowFile
+
+    bot = _flow_bot(db, key)
+    ensure_bot_permission(db, user, bot, Permission.CONFIGURE, request)
+    f = db.scalar(select(FlowFile).where(FlowFile.bot_id == bot.id, FlowFile.name == name))
+    if f is None:
+        raise HTTPException(404, "ficheiro não encontrado")
+    from ..models import Run
+
+    if db.scalar(select(Run.id).where(Run.bot_id == bot.id, Run.status == "RUNNING")):
+        raise HTTPException(409, "o fluxo está em execução; aguarde que termine")
+    db.delete(f)
+    audit(db, "user", user.username, "flow.file_deleted", "bot", bot.id, details={"file": name}, ip=client_ip(request))
+    db.commit()
+    return {"ok": True}
+
+
+def save_flow_file(db: Session, bot: Bot, name: str, data: bytes, who: str) -> bool:
+    """Grava (guardando a versão anterior). Devolve False se o conteúdo não mudou."""
+    import hashlib
+
+    from ..models import FlowFile
+
+    sha = hashlib.sha256(data).hexdigest()
+    f = db.scalar(select(FlowFile).where(FlowFile.bot_id == bot.id, FlowFile.name == name))
+    if f is None:
+        db.add(FlowFile(bot_id=bot.id, name=name, content=data, sha256=sha, updated_by=who))
+        return True
+    if f.sha256 == sha:
+        return False
+    f.previous_content, f.content, f.sha256, f.updated_by = f.content, data, sha, who
+    return True
+
+
 @router.get("/{key}")
 def get_flow(key: str, request: Request, version: int | None = None, user: User = Depends(current_user),
              db: Session = Depends(get_db)):

@@ -52,6 +52,16 @@ def _job(db: Session, run: Run) -> dict[str, Any]:
         job["credentials"] = flows.credentials_for_job(db, fv.definition)
         job["allowed_hosts"] = get_settings().flow_allowed_hosts
         job["parameters"] = run.parameters
+        # ficheiros persistentes declarados nesta versão do fluxo (conteúdo atual)
+        import base64
+
+        from ..models import FlowFile
+
+        names = list(fv.definition.get("persistent_files") or [])
+        stored = {f.name: f for f in db.scalars(select(FlowFile).where(FlowFile.bot_id == run.bot_id,
+                                                                       FlowFile.name.in_(names or [""])))}
+        job["persistent_files"] = {n: base64.b64encode(stored[n].content).decode() if n in stored else None
+                                   for n in names}
     return job
 
 
@@ -188,3 +198,37 @@ def upload_artifact(run_id: str, body: ArtifactIn, worker: Worker = Depends(curr
     db.add(art)
     db.commit()
     return {"id": art.id, "sha256": sha}
+
+
+class PersistentFileIn(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    content_b64: str = Field(max_length=8_000_000)
+
+
+@router.post("/runs/{run_id}/persistent-files")
+def save_persistent_file(run_id: str, body: PersistentFileIn, worker: Worker = Depends(current_worker),
+                         db: Session = Depends(get_db)):
+    import base64
+    import binascii
+
+    from ..flows import service as flows
+    from .flows import FLOW_FILE_MAX_BYTES, save_flow_file
+
+    run = _worker_run(db, run_id, worker)
+    if run.status != RunStatus.RUNNING:
+        raise HTTPException(409, "execução já terminou")
+    fv = flows.get_version(db, run.bot, run.flow_version)
+    if fv is None or body.name not in (fv.definition.get("persistent_files") or []):
+        raise HTTPException(403, "ficheiro não declarado como persistente neste fluxo")
+    try:
+        data = base64.b64decode(body.content_b64, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise HTTPException(422, "conteúdo inválido") from exc
+    if len(data) > FLOW_FILE_MAX_BYTES:
+        raise HTTPException(413, "ficheiro demasiado grande")
+    changed = save_flow_file(db, run.bot, body.name, data, f"run:{run.id}")
+    if changed:
+        audit(db, "worker", worker.name, "flow.file_updated_by_run", "run", run.id,
+              details={"file": body.name, "size": len(data)})
+    db.commit()
+    return {"changed": changed}

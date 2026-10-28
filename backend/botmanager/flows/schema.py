@@ -338,12 +338,27 @@ CREDENTIAL_KINDS_BY_STEP = {
 }
 
 
+FILE_NAME_RE = re.compile(r"^[^\\/:*?\"<>|{}]{1,200}$")
+
+
 class FlowDefinition(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     description: str = ""
     variables: dict[str, Any] = {}  # valores iniciais (não sensíveis)
+    # Ficheiros que se mantêm entre execuções (ex.: controlo do último registo processado)
+    persistent_files: list[str] = Field(default=[], max_length=50)
     steps: list[Step] = Field(min_length=1)
+
+    @field_validator("persistent_files")
+    @classmethod
+    def _files(cls, v: list[str]) -> list[str]:
+        for name in v:
+            if not FILE_NAME_RE.match(name) or name.startswith(".") or ".." in name:
+                raise ValueError(f"nome de ficheiro persistente inválido: {name!r}")
+        if len(set(v)) != len(v):
+            raise ValueError("ficheiros persistentes repetidos")
+        return v
 
 
 def iter_steps(steps: list[Any], depth: int = 1):

@@ -71,6 +71,26 @@ execução aprovada corre exatamente o que foi aprovado. Para reverter, abre-se 
 Os ficheiros criados pelo fluxo (CSV, texto) ficam associados à execução e podem ser descarregados na página da
 execução (limite por ficheiro: `BM_ARTIFACT_MAX_BYTES`, 20 MB por omissão). Os downloads ficam auditados.
 
+## Ficheiros persistentes (controlo entre execuções)
+
+Alguns robôs guardam estado num ficheiro de texto, por exemplo o último id processado ou a lista de ids já tratados,
+para não repetirem trabalho na execução seguinte. Nos fluxos, esses ficheiros são **ficheiros persistentes**:
+
+- São declarados no fluxo (`persistent_files` no JSON, ou no cartão **Ficheiros persistentes** em Editar fluxo).
+  O importador de robôs deteta-os sozinho: são os ficheiros de nome fixo que o robô lê (o `Config.txt` fica de fora).
+- O conteúdo fica guardado no Bot Manager. Em **Editar fluxo → Ficheiros persistentes** pode carregar o ficheiro
+  atual do servidor de bots, editá-lo, descarregá-lo, repor a versão anterior ou apagá-lo. Isto exige a permissão
+  *configure* e não é possível durante uma execução.
+- Antes de cada execução, os ficheiros são colocados na pasta do fluxo. Nos passos usa-se só o nome
+  (`ultimo id de cliente processado.txt`) em "Ler ficheiro de texto", "Criar ficheiro de texto" e `file_exists(...)`.
+- No fim, os ficheiros alterados são gravados de volta, **mesmo que a execução falhe ou seja interrompida**, porque
+  refletem o que já foi feito nos sistemas externos. Fica guardada a versão anterior e quem a alterou
+  (`run:<id da execução>`). Se a gravação falhar, a execução fica em falha com aviso para verificar antes de repetir.
+- Não aparecem como ficheiros produzidos da execução. Limite de 5 MB por ficheiro.
+
+Antes da primeira execução de um robô importado, carregue o conteúdo atual dos ficheiros de controlo. Sem conteúdo,
+o fluxo comporta-se como o robô original quando o ficheiro não existia.
+
 ## Segurança das chamadas
 
 - Só `https://`; o host não pode vir de uma variável; redireções não são seguidas.
@@ -135,10 +155,10 @@ OpenBots em `.zip` (usa o script principal indicado em `project.obconfig`).
 | Variáveis `{vNome}`, `[crLF]`, `{DateTime.Now…}` | modelos `{{ vNome }}`, quebras de linha, `now()` |
 | REST / HTTP Request | pedido HTTP; o cabeçalho Authorization passa a credencial (`cyclos-producao`, `cyclos-dev`…) |
 | Parse JSON / JSON Array / JSON Model | `jsonpath(...)`, `parsejson` (JSONPath com filtros `[?()]` não suportado) |
-| If, Multi If, ciclos, Exit/Next Loop, Try/Catch | condição, ciclo (as variáveis alteradas mantêm o valor, como no taskt), sair/próximo, tentar |
+| If, Multi If, ciclos, Exit/Next Loop, Try/Catch | condição, ciclo (as variáveis alteradas mantêm o valor, como no taskt; dentro de um ciclo sobre uma lista/tabela, Get Data Row/Get List Item continuam a usar a lista inteira), sair/próximo, tentar |
 | Textos (replace, split, extrair entre, regex, substring, maiúsculas) | expressões com filtros equivalentes |
 | Cálculos e datas (formatos .NET como `yyyy-MM-dd`) | `num`, `add_time`, `date` |
-| Escrever/ler ficheiros | ficheiros da execução (descarregáveis); ficheiros de outras pastas do servidor ficam vazios, com aviso no log |
+| Escrever/ler ficheiros | ficheiros da execução (descarregáveis); ficheiros de controlo lidos pelo robô passam a **ficheiros persistentes**; outros ficheiros do servidor ficam vazios, com aviso no log |
 | SMTP | email com a credencial `smtp-lusopay` (a password do XML não é copiada) |
 | SQL Server | consulta parametrizada com a credencial `sql-magnimeios` (a connection string não é copiada) |
 | Run Task dos scripts de configuração | removido (as credenciais vêm do cofre) |

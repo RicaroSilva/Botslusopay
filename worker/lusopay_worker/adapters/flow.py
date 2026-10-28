@@ -2,6 +2,8 @@
 (lusopay_worker.flowengine), sem taskt/OpenBots nem desktop Windows."""
 from __future__ import annotations
 
+import base64
+import hashlib
 import json
 import os
 import shutil
@@ -22,6 +24,18 @@ class FlowAdapter(Adapter):
             raise AdapterRejected("trabalho sem definição de fluxo")
         out_dir = Path(tempfile.mkdtemp(prefix=f"bm-{job['run_id'][:12]}-"))
         ctx.extra["out_dir"] = out_dir
+        # ficheiros persistentes: colocados na pasta da execução antes de começar
+        initial: dict[str, str | None] = {}
+        for name, content in (job.get("persistent_files") or {}).items():
+            if "/" in name or "\\" in name or name.startswith(".") or ".." in name:
+                raise AdapterRejected(f"nome de ficheiro persistente inválido: {name}")
+            if content is None:
+                initial[name] = None
+                continue
+            data = base64.b64decode(content)
+            (out_dir / name).write_bytes(data)
+            initial[name] = hashlib.sha256(data).hexdigest()
+        ctx.extra["persistent_initial"] = initial
         payload = {
             "run_id": job["run_id"],
             "flow": job["flow"],
@@ -59,11 +73,24 @@ class FlowAdapter(Adapter):
         summary.update({k: result.get(k) for k in ("counters", "duration_seconds", "stopped", "failed_step", "error")
                         if result.get(k) is not None})
         out_dir: Path = ctx.extra["out_dir"]
-        artifacts = [out_dir / f for f in result.get("files", []) if (out_dir / f).is_file()]
+        persistent = set(ctx.extra.get("persistent_initial") or {})
+        artifacts = [out_dir / f for f in result.get("files", []) if (out_dir / f).is_file() and f not in persistent]
         summary["files"] = [p.name for p in artifacts]
         if result.get("status") == "SUCCEEDED":
             return Outcome("SUCCEEDED", None, summary, artifacts)
         return Outcome("FAILED", "bot_reported_error", summary, artifacts)
+
+    def persistent_updates(self, ctx: RunContext) -> list[tuple[str, bytes]]:
+        out_dir: Path | None = ctx.extra.get("out_dir")
+        updates = []
+        for name, initial_sha in (ctx.extra.get("persistent_initial") or {}).items():
+            path = out_dir / name if out_dir else None
+            if path is None or not path.is_file():
+                continue
+            data = path.read_bytes()
+            if hashlib.sha256(data).hexdigest() != initial_sha:
+                updates.append((name, data))
+        return updates
 
     def cleanup(self, ctx: RunContext) -> None:
         out_dir = ctx.extra.get("out_dir")

@@ -202,6 +202,17 @@ class Runner:
                     logger.add(f"Ficheiro guardado: {path.name} ({path.stat().st_size} bytes)")
                 except Exception as exc:  # o resultado do bot não muda por falhar o envio
                     logger.add(f"Não foi possível guardar o ficheiro {path.name}: {exc}", "WARNING")
+        # Ficheiros persistentes (controlo): gravados mesmo que a execução tenha falhado ou sido
+        # interrompida, porque refletem o trabalho já feito nos sistemas externos.
+        for name, data in adapter.persistent_updates(ctx):
+            try:
+                self.client.save_persistent(run_id, name, data)
+                logger.add(f"Ficheiro persistente atualizado: {name} ({len(data)} bytes)")
+            except Exception as exc:
+                logger.add(f"NÃO foi possível gravar o ficheiro persistente {name}: {exc}", "ERROR")
+                payload = {**payload, "status": "FAILED", "failure_reason": "result_undetermined",
+                           "result_summary": {**(payload.get("result_summary") or {}),
+                                              "reason": f"ficheiro de controlo {name} não gravado; verificar antes de repetir"}}
         level = "INFO" if payload["status"] == "SUCCEEDED" else "ERROR"
         logger.add(f"Resultado: {payload['status']}" + (f" ({payload['failure_reason']})" if payload.get("failure_reason") else ""), level)
         self._finish(run_id, logger, payload)

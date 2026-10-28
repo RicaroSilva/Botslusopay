@@ -110,3 +110,47 @@ def test_native_flow_end_to_end(stack, https_server):  # noqa: F811
     assert [a["name"] for a in arts] == ["transacoes.csv"]
     content = stack["user"].get(f"/api/runs/{rid}/artifacts/{arts[0]['id']}").content.decode("utf-8-sig")
     assert content.splitlines() == ["ID;Valor", "1;10,50", "2;7,00"]
+
+
+def test_persistent_control_file_saved_even_when_flow_fails(stack):  # noqa: F811
+    import base64
+
+    from fastapi.testclient import TestClient
+
+    from botmanager.models import Role, User, Worker
+    from botmanager.security.passwords import hash_password
+
+    db = stack["db"]
+    db.add(User(username="admin", role=Role.ADMIN, password_hash=hash_password("correct-horse-battery")))
+    w = db.query(Worker).filter_by(name="w").one()
+    w.capabilities = ["flow"]
+    db.commit()
+    stack["cfg"].adapters = ["flow"]
+    admin = TestClient(stack["user"].app)
+    admin.post("/api/auth/login", json={"username": "admin", "password": "correct-horse-battery"})
+    admin.headers["X-Requested-With"] = "botmanager"
+    ctl = "ultimo id processado.txt"
+    flow = {"persistent_files": [ctl], "steps": [
+        {"id": "ler", "type": "text_read", "file": ctl, "save_as": "ultimo", "missing_ok": True},
+        {"id": "ciclo", "type": "foreach", "items_expr": "range((ultimo | int) + 1, (ultimo | int) + 4)",
+         "item_variable": "n", "steps": [
+             {"id": "grava", "type": "text_write", "file": ctl, "content": "{{ n }}"},
+             {"id": "para", "type": "if", "condition": "n == (ultimo | int) + 2",
+              "then": [{"id": "erro", "type": "fail", "message": "falha a meio"}]}]},
+    ]}
+    assert admin.post("/api/flows", json={"key": "controlo", "name": "Controlo", "risk_level": "low",
+                                          "definition": flow}).status_code == 201
+    admin.patch("/api/admin/bots/controlo", json={"enabled": True})
+    url = f"/api/flows/controlo/files/{ctl}"
+    assert admin.put(url, json={"content_b64": base64.b64encode(b"41").decode()}).status_code == 200
+    rid = stack["user"].post("/api/bots/controlo/run",
+                             json={"parameters": {}, "idempotency_key": uuid.uuid4().hex}).json()["run_id"]
+    stack["runner"].execute(stack["client"].claim([], ["flow"]))
+    run = stack["user"].get(f"/api/runs/{rid}").json()
+    assert run["status"] == "FAILED"
+    # o último id efetivamente escrito (43) ficou gravado, apesar da falha
+    assert admin.get(url).content == b"43"
+    assert admin.get(url, params={"previous": True}).content == b"41"
+    assert stack["user"].get(f"/api/runs/{rid}/artifacts").json() == []
+    text = "\n".join(l["message"] for l in stack["user"].get(f"/api/runs/{rid}/logs").json()["lines"])
+    assert f"Ficheiro persistente atualizado: {ctl}" in text

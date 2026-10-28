@@ -71,3 +71,10 @@ class BackendClient:
         r = self._post(f"/api/worker/runs/{run_id}/artifacts",
                        {"name": name, "content_type": content_type, "data_b64": base64.b64encode(data).decode()})
         r.raise_for_status()
+
+    def save_persistent(self, run_id: str, name: str, data: bytes) -> None:
+        import base64
+
+        r = self._post(f"/api/worker/runs/{run_id}/persistent-files",
+                       {"name": name, "content_b64": base64.b64encode(data).decode()})
+        r.raise_for_status()

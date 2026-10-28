@@ -19,6 +19,7 @@ from pathlib import PureWindowsPath
 from typing import Any, Callable
 from urllib.parse import urlsplit
 
+from ..schema import FILE_NAME_RE
 from .model import Command, Robot, table_rows_as_pairs
 
 # Nomes de comandos do OpenBots que correspondem a comandos do taskt (por validar com projetos reais).
@@ -118,6 +119,7 @@ class Translator:
         self.report: list[ReportItem] = []
         self.credentials: dict[str, str] = {}
         self.written: set[str] = set()
+        self.loop_lists: list[str] = []  # variáveis de ciclos sobre listas ativos
         self.referenced: set[str] = set()
         self.declared = {self.var(k): v for k, v in robot.variables.items() if k}
         self.continue_on_error = False
@@ -126,6 +128,26 @@ class Translator:
         self.writes_external = False
         self.sends_email = False
         self.cmd: Command | None = None
+        self.persistent = self._control_files(robot)  # ficheiros de controlo entre execuções
+
+    def _control_files(self, robot: Robot) -> set[str]:
+        """Ficheiros de nome fixo que o robô lê (ex.: 'ultimo id processado.txt'): guardam estado entre execuções e
+        passam a ser ficheiros persistentes do fluxo."""
+        out = set()
+        for c in robot.commands:
+            if c.enabled and ALIASES.get(c.type, c.type) == "ReadTextFileCommand":
+                name = self.basename(c.attrs.get("v_FilePath", ""))
+                if name and "{{" not in name and "config" not in name.lower() and FILE_NAME_RE.match(name):
+                    out.add(name)
+        return out
+
+    def collection(self, raw: str) -> str:
+        """Expressão da lista/tabela; dentro de um ciclo sobre a própria lista, o nome da variável passa a ser o
+        elemento atual, por isso usa-se a cópia guardada antes do ciclo."""
+        name = self.var(raw)
+        if name in self.loop_lists:
+            return f"{name}_colecao"
+        return self.expr(raw)
 
     # ------------------------------------------------------------------ nomes e texto
 
@@ -338,16 +360,24 @@ class Translator:
         c = cmds[i]
         comment = self.pending_comment or c.comment
         self.pending_comment = ""
-        body, j, term = self.block(cmds, i + 1, ("EndLoopCommand",))
+        list_var = self.var(c.attrs.get("v_LoopParameter", "")) if c.type == "BeginListLoopCommand" else ""
+        self.loop_lists.append(list_var)
+        try:
+            body, j, term = self.block(cmds, i + 1, ("EndLoopCommand",))
+        finally:
+            self.loop_lists.pop()
         nxt = j + 1 if term == "EndLoopCommand" else j
         if term != "EndLoopCommand":
             self.note("aproximado", "ciclo sem End Loop: fechado no fim do script", c)
         if not body:
             body = [self.step("log", "Ciclo vazio", message="(ciclo sem passos no robô original)")]
         a = c.attrs
+        before: list[dict] = []
         if c.type == "BeginListLoopCommand":
             param = a.get("v_LoopParameter", "")
-            items, item_var = f"(({self.expr(param)}) | parsejson) or []", self.var(param)
+            items, item_var = f"{list_var}_colecao", list_var
+            before = [self.step("set", "Lista do ciclo", variable=f"{list_var}_colecao",
+                                expr=f"(({self.collection(param)}) | parsejson) or []")]
             self.note("convertido", "ciclo sobre lista", c)
         elif c.type == "BeginNumberOfTimesLoopCommand":
             start = self.num_expr(a.get("v_LoopStart") or "0")
@@ -370,7 +400,7 @@ class Translator:
             self.note("aproximado", "ciclo com condição convertido em ciclo com saída quando a condição deixa de ser verdadeira", c)
         carry = sorted(n for n in assigned_vars(body) if n != item_var)
         self.pending_comment = comment
-        return [self.step("foreach", "Ciclo", items_expr=items, item_variable=item_var, parallel=1,
+        return [*before, self.step("foreach", "Ciclo", items_expr=items, item_variable=item_var, parallel=1,
                           carry=carry or None, steps=body)], nxt
 
     def try_block(self, cmds: list[Command], i: int) -> tuple[list[dict], int]:
@@ -431,7 +461,10 @@ class Translator:
             return f"is_numeric({self.expr(p.get('Variable Name', ''))})"
         if kind == "File Exists":
             name = self.basename(p.get("File Path", ""))
-            self.note("aproximado", "'File Exists' só vê ficheiros criados nesta execução do fluxo", c)
+            if name in self.persistent:
+                self.note("convertido", f"verificação do ficheiro de controlo '{name}' (ficheiro persistente do fluxo)", c)
+            else:
+                self.note("aproximado", "'File Exists' só vê ficheiros criados nesta execução do fluxo", c)
             test = f"file_exists({json.dumps(name)})" if "{{" not in name else f"file_exists({self.expr(p.get('File Path', '').split(chr(92))[-1])})"
             return test if (p.get("True When") or "").lower().find("not") < 0 else f"not {test}"
         if kind == "Error Occured":
@@ -574,11 +607,11 @@ class Translator:
 
     def c_GetListCountCommand(self, c):
         out = self._out(c, "v_UserVariableName", "v_applyToVariableName")
-        return self._set_expr(c, out, f"(({self.expr(c.attrs.get('v_ListName', ''))}) | parsejson) | length", "Contar elementos")
+        return self._set_expr(c, out, f"(({self.collection(c.attrs.get('v_ListName', ''))}) | parsejson) | length", "Contar elementos")
 
     def c_GetListItemCommand(self, c):
         out = self._out(c, "v_UserVariableName", "v_applyToVariableName")
-        return self._set_expr(c, out, f"(({self.expr(c.attrs.get('v_ListName', ''))}) | parsejson)[{self.num_expr(c.attrs.get('v_ItemIndex', '0'))}]",
+        return self._set_expr(c, out, f"(({self.collection(c.attrs.get('v_ListName', ''))}) | parsejson)[{self.num_expr(c.attrs.get('v_ItemIndex', '0'))}]",
                               "Obter elemento da lista")
 
     def c_StringReplaceCommand(self, c):
@@ -697,13 +730,19 @@ class Translator:
             raise _Unsupported("ficheiro sem nome")
         append = (c.attrs.get("v_Overwrite") or "").lower() == "append"
         self.written.add(name)
-        self.note("convertido", f"escrita do ficheiro {name} (fica disponível na execução)", c)
+        if name in self.persistent:
+            self.note("convertido", f"atualização do ficheiro de controlo '{name}' (gravado no fim da execução, mesmo que falhe)", c)
+        else:
+            self.note("convertido", f"escrita do ficheiro {name} (fica disponível na execução)", c)
         return [self.step("text_write", "Escrever ficheiro", file=name, content=self.tpl(c.attrs.get("v_TextToWrite", "")),
                           append=append or None)]
 
     def c_ReadTextFileCommand(self, c):
         name = self.basename(c.attrs.get("v_FilePath", ""))
         out = self.var(c.attrs.get("v_userVariableName") or "texto")
+        if name in self.persistent:
+            self.note("convertido", f"leitura do ficheiro de controlo '{name}' (ficheiro persistente do fluxo)", c)
+            return [self.step("text_read", "Ler ficheiro de controlo", file=name, save_as=out, missing_ok=True)]
         if name in self.written:
             self.note("convertido", f"leitura de {name}", c)
             return [self.step("text_read", "Ler ficheiro", file=name, save_as=out)]
@@ -717,7 +756,7 @@ class Translator:
 
     def c_DeleteFileCommand(self, c):
         name = self.basename(c.attrs.get("v_SourceFilePath", "") or c.attrs.get("v_FilePath", ""))
-        if name in self.written:
+        if name in self.written or name in self.persistent:
             self.note("convertido", f"apagar {name} (o ficheiro é esvaziado)", c)
             return [self.step("text_write", "Apagar ficheiro", file=name, content="")]
         self.note("ignorado", "apagar ficheiro do servidor de bots (não se aplica)", c)
@@ -782,11 +821,11 @@ class Translator:
 
     def c_GetDataRowCountCommand(self, c):
         out = self._out(c, "v_UserVariableName")
-        return self._set_expr(c, out, f"({self.expr(c.attrs.get('v_DataTableName', ''))}) | length", "Número de linhas")
+        return self._set_expr(c, out, f"({self.collection(c.attrs.get('v_DataTableName', ''))}) | length", "Número de linhas")
 
     def c_GetDataRowCommand(self, c):
         out = self._out(c, "v_UserVariableName")
-        return self._set_expr(c, out, f"({self.expr(c.attrs.get('v_DataTableName', ''))})[{self.num_expr(c.attrs.get('v_DataRowIndex', '0'))}]",
+        return self._set_expr(c, out, f"({self.collection(c.attrs.get('v_DataTableName', ''))})[{self.num_expr(c.attrs.get('v_DataRowIndex', '0'))}]",
                               "Obter linha")
 
     def c_GetDataRowValueCommand(self, c):
@@ -871,10 +910,17 @@ def convert(robot: Robot, test_email: str = "") -> ConversionResult:
         variables["email_teste"] = tr.test_email
         tr.report.insert(0, ReportItem("info", 0, "", f"todos os emails vão para {tr.test_email} enquanto a variável "
                                                      "'email_teste' tiver valor; deixe-a vazia para usar os destinatários originais"))
+    if tr.persistent:
+        definition_files = sorted(tr.persistent)
+        tr.report.insert(0, ReportItem("info", 0, "", "ficheiros de controlo (guardam o estado entre execuções): "
+                                       + ", ".join(definition_files) + ". Depois de criar o fluxo, carregue o conteúdo "
+                                       "atual em Editar fluxo → Ficheiros persistentes, antes da primeira execução"))
     title = re.sub(r"\.(xml|obscript|json)$", "", robot.name, flags=re.I)
     risk = "high" if tr.writes_external else ("medium" if tr.sends_email or tr.credentials else "low")
     definition = {"description": f"Importado de {robot.name} ({robot.source_format})", "variables": variables,
                   "steps": steps}
+    if tr.persistent:
+        definition["persistent_files"] = sorted(tr.persistent)
     return ConversionResult(name=title[:200], key=suggest_key(robot.name), source_format=robot.source_format,
                             definition=definition, report=tr.report, credentials=dict(sorted(tr.credentials.items())),
                             risk_level=risk, notes=robot.notes)

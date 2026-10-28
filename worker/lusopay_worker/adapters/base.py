@@ -104,5 +104,9 @@ class Adapter:
     def cleanup(self, ctx: RunContext) -> None:
         pass
 
+    def persistent_updates(self, ctx: RunContext) -> list[tuple[str, bytes]]:
+        """Ficheiros persistentes alterados pela execução (a gravar no backend)."""
+        return []
+
     def evaluate(self, ctx: RunContext, exit_code: int | None, output: str) -> Outcome:
         raise NotImplementedError

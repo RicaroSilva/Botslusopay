@@ -238,3 +238,45 @@ def test_import_migrated_flows(env, clients):
         "definition": {"steps": [{"id": "x", "type": "http_request", "url": "https://x.pt", "credential": "nada"}]}}).text
     # não pode sobrepor bots taskt do registo
     assert a.post("/api/flows/import", json={**json.loads(files[0].read_text(encoding="utf-8")), "key": "low-bot"}).status_code == 409
+
+
+def test_persistent_files_lifecycle(env, clients):
+    _setup(clients)
+    a = clients["admin"]
+    ctl = "ultimo id processado.txt"
+    assert a.put("/api/flows/transacoes-dev", json={"definition": {**FLOW, "persistent_files": [ctl]}}).status_code == 200
+    rows = a.get("/api/flows/transacoes-dev/files").json()
+    assert rows == [{"name": ctl, "declared": True, "exists": False, "size_bytes": 0, "updated_at": None,
+                     "updated_by": None, "has_previous": False}]
+    url = f"/api/flows/transacoes-dev/files/{ctl}"
+    b64 = lambda s: base64.b64encode(s.encode()).decode()  # noqa: E731
+    # só quem configura o bot pode alterar; quem vê pode descarregar
+    assert clients["operator"].put(url, json={"content_b64": b64("1")}).status_code == 403
+    assert a.put("/api/flows/transacoes-dev/files/a{b}.txt", json={"content_b64": b64("1")}).status_code == 422
+    assert a.put(url, json={"content_b64": b64("100")}).status_code == 200
+    assert clients["viewer"].get(url).content == b"100"
+
+    from botmanager.models import Worker
+
+    w = env["db"].query(Worker).filter_by(name="w1").one()
+    w.capabilities = ["flow"]
+    env["db"].commit()
+    rid = run_bot(clients["operator"], "transacoes-dev").json()["run_id"]
+    wc = worker_client(env["app"])
+    j = wc.post("/api/worker/claim", json={}).json()
+    assert j["persistent_files"] == {ctl: b64("100")}
+    # alterar enquanto corre é recusado
+    assert a.put(url, json={"content_b64": b64("x")}).status_code == 409
+    # o worker só grava ficheiros declarados na versão da execução
+    assert wc.post(f"/api/worker/runs/{rid}/persistent-files",
+                   json={"name": "outro.txt", "content_b64": b64("1")}).status_code == 403
+    r = wc.post(f"/api/worker/runs/{rid}/persistent-files", json={"name": ctl, "content_b64": b64("250")})
+    assert r.status_code == 200 and r.json()["changed"] is True
+    done = wc.post(f"/api/worker/runs/{rid}/complete", json={"status": "FAILED", "failure_reason": "bot_reported_error"})
+    assert done.status_code == 200, done.text
+    assert wc.post(f"/api/worker/runs/{rid}/persistent-files",
+                   json={"name": ctl, "content_b64": b64("999")}).status_code == 409
+    row = a.get("/api/flows/transacoes-dev/files").json()[0]
+    assert row["updated_by"] == f"run:{rid}" and row["has_previous"] is True
+    assert a.get(url).content == b"250" and a.get(url, params={"previous": True}).content == b"100"
+    assert a.delete(url).status_code == 200 and a.get(url).status_code == 404

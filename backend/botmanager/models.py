@@ -398,3 +398,21 @@ class RunArtifact(Base):
     sha256: Mapped[str] = mapped_column(String(64), nullable=False)
     data: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     created_at: Mapped[datetime] = mapped_column(TZDateTime(), nullable=False, default=utcnow)
+
+
+class FlowFile(Base):
+    """Ficheiros persistentes de um fluxo (ex.: ficheiros de controlo 'último id processado').
+    Disponíveis no início de cada execução e atualizados no fim (mesmo que a execução falhe,
+    para refletir o trabalho já feito). Guarda-se a versão anterior para recuperação."""
+
+    __tablename__ = "flow_files"
+    __table_args__ = (UniqueConstraint("bot_id", "name", name="uq_flow_file_name"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    bot_id: Mapped[str] = mapped_column(ForeignKey("bots.id", ondelete="CASCADE"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    content: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    previous_content: Mapped[bytes | None] = mapped_column(LargeBinary)
+    updated_by: Mapped[str] = mapped_column(String(120), nullable=False, default="")  # utilizador ou run:<id>
+    updated_at: Mapped[datetime] = mapped_column(TZDateTime(), nullable=False, default=utcnow, onupdate=utcnow)
