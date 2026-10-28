@@ -295,3 +295,16 @@ def test_admin_can_waive_approval_on_high_risk_flow(env, clients):
     assert a.get("/api/admin/audit", params={"action": "flow.meta_updated"}).json()
     # sem indicar, risco elevado continua a exigir aprovação
     assert a.patch("/api/flows/fluxo-risco", json=meta).json()["requires_approval"] is True
+
+
+def test_admin_manual_run_skips_approval_but_operator_waits(env, clients):
+    body = {"key": "fluxo-risco", "name": "Fluxo de risco", "risk_level": "high",
+            "definition": {"steps": [{"id": "l", "type": "log", "message": "x"}]}}
+    a = clients["admin"]
+    a.post("/api/flows", json=body)
+    a.patch("/api/admin/bots/fluxo-risco", json={"enabled": True})
+    r = run_bot(a, "fluxo-risco").json()
+    assert r["status"] == "QUEUED"
+    assert a.get("/api/admin/audit", params={"action": "run.approval_waived"}).json()
+    a.post(f"/api/runs/{r['run_id']}/cancel")
+    assert run_bot(clients["operator"], "fluxo-risco").json()["status"] == "WAITING_APPROVAL"

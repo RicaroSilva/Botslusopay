@@ -36,6 +36,7 @@ export function ImportRobot() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [filter, setFilter] = useState("problemas");
+  const [approval, setApproval] = useState(false);
 
   async function convert() {
     if (!file) return;
@@ -44,7 +45,7 @@ export function ImportRobot() {
       const r = await api.post<Conversion>("/api/flows/convert", {
         filename: file.name, content_b64: toBase64(await file.arrayBuffer()), test_email: testEmail,
       });
-      setConv(r); setKey(r.key); setName(r.name);
+      setConv(r); setKey(r.key); setName(r.name); setApproval(r.risk_level === "high");
     } catch (e) { setError((e as ApiError).message); }
     finally { setBusy(false); }
   }
@@ -55,7 +56,7 @@ export function ImportRobot() {
     const problems = conv.report.filter((r) => r.level === "nao_convertivel" || r.level === "aproximado");
     try {
       await api.post("/api/flows/import", {
-        key, name, category: "Importado", risk_level: conv.risk_level, requires_approval: conv.risk_level === "high", timeout_seconds: 7200,
+        key, name, category: "Importado", risk_level: conv.risk_level, requires_approval: approval, timeout_seconds: 7200,
         description: `Convertido automaticamente de ${file?.name} (${conv.source_format}). Rever antes de usar.`,
         source_bot: file?.name ?? "", definition: conv.definition,
         migration_notes: [
@@ -155,6 +156,11 @@ export function ImportRobot() {
               <label>Chave<input value={key} pattern="[a-z0-9][a-z0-9-]{2,79}" onChange={(e) => setKey(e.target.value)} /></label>
               <label>Nome<input value={name} onChange={(e) => setName(e.target.value)} /></label>
             </div>
+            <label className="check"><input type="checkbox" checked={approval} onChange={(e) => setApproval(e.target.checked)} />
+              Exigir aprovação antes de cada execução (outra pessoa tem de aprovar)</label>
+            {conv.risk_level === "high" && !approval && (
+              <p className="alert alert-warn">Este robô altera dados em sistemas externos e vai correr sem aprovação.</p>
+            )}
             {conv.key_taken && key === conv.key && (
               <p className="alert alert-warn">Já existe um fluxo com esta chave: será gravada uma nova versão dele.</p>
             )}

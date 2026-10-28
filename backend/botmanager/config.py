@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     timezone: str = "Europe/Lisbon"
     # Quatro olhos: quem pediu uma execução não a pode aprovar.
     allow_self_approval: bool = False
+    # Execuções pedidas manualmente por um administrador não ficam à espera de aprovação (fica auditado).
+    # Em produção com várias pessoas, pôr BM_ADMIN_SKIPS_APPROVAL=false para manter os quatro olhos.
+    admin_skips_approval: bool = True
     # Chave Fernet do cofre de credenciais (python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
     vault_key: str = ""
     vault_key_old: str = ""

@@ -16,6 +16,7 @@ from ..models import (
     Bot,
     BotDependency,
     ResourceLock,
+    Role,
     Run,
     RunLog,
     TriggerRule,
@@ -238,6 +239,13 @@ def create_run(
         details={"bot": bot.key, "source": source, "parameters": public_params, "rule": rule.id if rule else None},
     )
     needs_approval = defn.requires_approval or bool(rule and rule.requires_approval)
+    if (needs_approval and source == "manual" and user is not None and user.role == Role.ADMIN
+            and get_settings().admin_skips_approval):
+        needs_approval = False
+        run.approved_by = user.id
+        run.approved_at = utcnow()
+        audit(db, "user", user.username, "run.approval_waived", "run", run.id,
+              details={"bot": bot.key, "reason": "pedida por um administrador"})
     transition(
         db,
         run,
@@ -254,7 +262,9 @@ def create_run(
 def approve_run(db: Session, run: Run, approver: User, approve: bool, comment: str = "") -> None:
     if run.status != RunStatus.WAITING_APPROVAL:
         raise StateError("a execução não está a aguardar aprovação")
-    if run.requested_by == approver.id and not get_settings().allow_self_approval:
+    s = get_settings()
+    own = run.requested_by == approver.id
+    if own and not s.allow_self_approval and not (approver.role == Role.ADMIN and s.admin_skips_approval):
         raise ApprovalError("quem pediu a execução não a pode aprovar")
     if approve:
         unmet = unmet_dependencies(db, run.bot)

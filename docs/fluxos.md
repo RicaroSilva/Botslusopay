@@ -5,7 +5,8 @@ desktop Windows. São criados e editados na aplicação: **Catálogo → + Novo 
 **Detalhe do bot → Editar fluxo** (quem tem a permissão *configure* no bot).
 
 Tudo o que já existia continua a aplicar-se: botão Executar, aprovações (marcadas por omissão em risco elevado; só um
-administrador as pode dispensar, e fica auditado),
+administrador as pode dispensar, e fica auditado; as execuções pedidas por um administrador não esperam
+aprovação, exceto com `BM_ADMIN_SKIPS_APPROVAL=false`),
 agendamentos e outras regras, dependências, histórico, logs e auditoria.
 
 ## Porque é mais rápido
