@@ -156,7 +156,8 @@ cd worker && pip install -e . && WORKER_BACKEND_URL=http://127.0.0.1:8000 WORKER
 Os bots `[SIMULADO]` (pasta `bots/registry-dev`) só são carregados quando esta pasta está em `BM_EXTRA_REGISTRY_DIRS`.
 Não a configure em produção.
 
-**Windows, num clique:** `arrancar.bat` (na raiz do repositório) faz `git pull`, instala as dependências, corre
+**Windows, num clique:** `iniciar.bat` arranca o backend e o worker e abre `http://localhost:8000/admin` (na primeira vez
+pede o token do worker e grava-o em `worker.token`). `arrancar.bat` (na raiz do repositório) faz `git pull`, instala as dependências, corre
 `alembic upgrade head`, compila o frontend e abre duas janelas, uma com o backend e outra com o worker (adaptador `flow`). O token
 do worker é lido de `worker.token`, na raiz, ficheiro ignorado pelo Git. Feche antes um backend que já esteja a correr
 (a porta 8000 tem de estar livre).
