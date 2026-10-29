@@ -59,6 +59,8 @@ class RunRequest(BaseModel):
     parameters: dict[str, Any] = {}
     # gerado pelo browser por clique: protege contra duplo clique / reenvio
     idempotency_key: str = Field(min_length=8, max_length=100, pattern=r"^[A-Za-z0-9_-]+$")
+    # teste sem efeitos externos (só para robôs nativos; exige a permissão de configurar)
+    dry_run: bool = False
 
 
 @router.post("/{key}/run", status_code=202)
@@ -66,8 +68,8 @@ def run_bot(key: str, body: RunRequest, request: Request, user: User = Depends(c
             db: Session = Depends(get_db)):
     bot = get_bot_or_404(db, key)
     ensure_bot_permission(db, user, bot, Permission.VIEW, request)
-    ensure_bot_permission(db, user, bot, Permission.EXECUTE, request)
+    ensure_bot_permission(db, user, bot, Permission.CONFIGURE if body.dry_run else Permission.EXECUTE, request)
     res = create_run(db, bot, source="manual", user=user, parameters=body.parameters,
-                     idempotency_key=f"manual:{user.id}:{body.idempotency_key}")
+                     idempotency_key=f"manual:{user.id}:{body.idempotency_key}", dry_run=body.dry_run)
     db.commit()
     return {"run_id": res.run.id, "status": res.run.status.value, "deduplicated": res.deduplicated}

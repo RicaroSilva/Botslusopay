@@ -19,6 +19,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    false,
 )
 from sqlalchemy.types import TypeDecorator
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -269,6 +270,8 @@ class Run(Base):
     last_heartbeat_at: Mapped[datetime | None] = mapped_column(TZDateTime())
     timeout_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=3600)
     cancel_requested: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # simulação (teste): só leituras; POST/PUT/DELETE, emails e escritas SQL não são feitos
+    dry_run: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=false())
     exit_code: Mapped[int | None] = mapped_column(Integer)
     failure_reason: Mapped[str | None] = mapped_column(String(40))
     # True quando a execução pode ter produzido efeitos externos sem confirmação

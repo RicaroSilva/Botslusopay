@@ -154,3 +154,57 @@ def test_persistent_control_file_saved_even_when_flow_fails(stack):  # noqa: F81
     assert stack["user"].get(f"/api/runs/{rid}/artifacts").json() == []
     text = "\n".join(l["message"] for l in stack["user"].get(f"/api/runs/{rid}/logs").json()["lines"])
     assert f"Ficheiro persistente atualizado: {ctl}" in text
+
+
+def test_groovy_robot_end_to_end_with_persistent_file_and_dry_run(stack):  # noqa: F811
+    import base64
+
+    from fastapi.testclient import TestClient
+
+    from botmanager.models import Role, User, Worker
+    from botmanager.security.passwords import hash_password
+
+    try:
+        from lusopay_worker.groovy import runtime
+
+        runtime()
+    except Exception:  # noqa: BLE001
+        pytest.skip("Java/Groovy indisponível")
+    db = stack["db"]
+    db.add(User(username="admin", role=Role.ADMIN, password_hash=hash_password("correct-horse-battery")))
+    w = db.query(Worker).filter_by(name="w").one()
+    w.capabilities = ["flow"]
+    db.commit()
+    stack["cfg"].adapters = ["flow"]
+    admin = TestClient(stack["user"].app)
+    admin.post("/api/auth/login", json={"username": "admin", "password": "correct-horse-battery"})
+    admin.headers["X-Requested-With"] = "botmanager"
+    ctl = "ultimo.txt"
+    code = ('def ultimo = num(ficheiro.ler("ultimo.txt") ?: "0")\n'
+            'log "último processado: ${ultimo}"\n'
+            'ficheiro.gravar("ultimo.txt", ultimo + 5)\n'
+            'ficheiro.gravar("relatorio.txt", "processados até ${ultimo + 5}")\n')
+    r = admin.post("/api/flows", json={"key": "robo-groovy", "name": "Robô Groovy", "risk_level": "low",
+                                       "definition": {"language": "groovy", "code": code, "persistent_files": [ctl]}})
+    assert r.status_code == 201, r.text
+    url = f"/api/flows/robo-groovy/files/{ctl}"
+    admin.put(url, json={"content_b64": base64.b64encode(b"10").decode()})
+
+    def run_once(dry):
+        rid = admin.post("/api/bots/robo-groovy/run", json={"parameters": {}, "idempotency_key": uuid.uuid4().hex,
+                                                            "dry_run": dry}).json()["run_id"]
+        stack["runner"].execute(stack["client"].claim([], ["flow"]))
+        return rid, stack["user"].get(f"/api/runs/{rid}").json()
+
+    # simulação com o robô ainda desativado: corre, mas o ficheiro de controlo não muda
+    rid, run = run_once(True)
+    logs = "\n".join(l["message"] for l in stack["user"].get(f"/api/runs/{rid}/logs").json()["lines"])
+    assert run["status"] == "SUCCEEDED" and run["dry_run"] is True, logs
+    assert "último processado: 10" in logs and admin.get(url).content == b"10"
+    # execução real
+    admin.patch("/api/admin/bots/robo-groovy", json={"enabled": True})
+    rid, run = run_once(False)
+    assert run["status"] == "SUCCEEDED"
+    assert admin.get(url).content == b"15"
+    arts = stack["user"].get(f"/api/runs/{rid}/artifacts").json()
+    assert [a["name"] for a in arts] == ["relatorio.txt"]

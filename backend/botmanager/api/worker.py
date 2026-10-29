@@ -48,6 +48,7 @@ def _job(db: Session, run: Run) -> dict[str, Any]:
         if fv is None:
             raise vault.VaultError(f"versão {run.flow_version} do fluxo não encontrada")
         job["flow"] = {"version": fv.version, "definition": fv.definition}
+        job["dry_run"] = run.dry_run
         # Só as credenciais referidas pelo fluxo, decifradas, por HTTPS e apenas para esta execução.
         job["credentials"] = flows.credentials_for_job(db, fv.definition)
         job["allowed_hosts"] = get_settings().flow_allowed_hosts
@@ -217,6 +218,8 @@ def save_persistent_file(run_id: str, body: PersistentFileIn, worker: Worker = D
     run = _worker_run(db, run_id, worker)
     if run.status != RunStatus.RUNNING:
         raise HTTPException(409, "execução já terminou")
+    if run.dry_run:
+        raise HTTPException(409, "uma simulação não altera os ficheiros persistentes")
     fv = flows.get_version(db, run.bot, run.flow_version)
     if fv is None or body.name not in (fv.definition.get("persistent_files") or []):
         raise HTTPException(403, "ficheiro não declarado como persistente neste fluxo")

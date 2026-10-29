@@ -172,6 +172,7 @@ def create_run(
     retry_of: Run | None = None,
     actor_type: str = "user",
     actor_id: str | None = None,
+    dry_run: bool = False,
 ) -> CreateResult:
     """Cria uma execução após TODAS as verificações. Não faz commit."""
     actor_id = actor_id or (user.username if user else None)
@@ -182,7 +183,10 @@ def create_run(
 
     if bot.adapter == "flow" and not bot.current_flow_version:
         raise BotUnavailable("o fluxo ainda não tem nenhuma versão gravada")
-    if not bot.in_registry or not bot.enabled or bot.availability != Availability.AVAILABLE:
+    if dry_run and bot.adapter != "flow":
+        raise BotUnavailable("a simulação só existe para robôs nativos (fluxo ou Groovy)")
+    # a simulação (teste) pode correr com o robô ainda desativado: não tem efeitos externos
+    if not bot.in_registry or (not bot.enabled and not dry_run) or bot.availability != Availability.AVAILABLE:
         raise BotUnavailable(
             "bot indisponível", enabled=bot.enabled, availability=bot.availability.value, in_registry=bot.in_registry
         )
@@ -214,6 +218,7 @@ def create_run(
         timeout_seconds=defn.timeout_seconds,
         # a versão do fluxo fica fixada no pedido: é essa que é aprovada e executada
         flow_version=bot.current_flow_version if bot.adapter == "flow" else None,
+        dry_run=dry_run,
     )
     try:
         with db.begin_nested():
@@ -236,9 +241,10 @@ def create_run(
         "run.created",
         "run",
         run.id,
-        details={"bot": bot.key, "source": source, "parameters": public_params, "rule": rule.id if rule else None},
+        details={"bot": bot.key, "source": source, "parameters": public_params, "rule": rule.id if rule else None,
+                 "dry_run": dry_run},
     )
-    needs_approval = defn.requires_approval or bool(rule and rule.requires_approval)
+    needs_approval = (defn.requires_approval or bool(rule and rule.requires_approval)) and not dry_run
     if (needs_approval and source == "manual" and user is not None and user.role == Role.ADMIN
             and get_settings().admin_skips_approval):
         needs_approval = False

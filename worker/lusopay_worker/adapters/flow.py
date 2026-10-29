@@ -43,7 +43,16 @@ class FlowAdapter(Adapter):
             "allowed_hosts": job.get("allowed_hosts") or [],
             "parameters": job.get("parameters") or {},
             "out_dir": str(out_dir),
+            "dry_run": bool(job.get("dry_run")),
         }
+        if job["flow"]["definition"].get("language") == "groovy":
+            from ..groovy import GroovyUnavailable, Runtime, runtime
+
+            try:
+                rt = runtime()
+            except GroovyUnavailable as exc:
+                raise AdapterRejected(f"robô Groovy: {exc}") from exc
+            payload["groovy"] = {"argv": rt.command("run", out_dir), "env": Runtime.env(out_dir)}
         # garante que o subprocesso encontra este pacote mesmo sem instalação via pip
         pkg_root = str(Path(__file__).resolve().parents[2])
         env = {**os.environ, "PYTHONPATH": os.pathsep.join(filter(None, [pkg_root, os.environ.get("PYTHONPATH")])),
@@ -81,6 +90,8 @@ class FlowAdapter(Adapter):
         return Outcome("FAILED", "bot_reported_error", summary, artifacts)
 
     def persistent_updates(self, ctx: RunContext) -> list[tuple[str, bytes]]:
+        if ctx.job.get("dry_run"):
+            return []  # simulação: o estado guardado não muda
         out_dir: Path | None = ctx.extra.get("out_dir")
         updates = []
         for name, initial_sha in (ctx.extra.get("persistent_initial") or {}).items():

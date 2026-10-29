@@ -259,6 +259,37 @@ def is_numeric(v: Any) -> bool:
         return False
 
 
+def named_to_pyformat(query: str, params: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+    """Converte parâmetros ':nome' (estilo JDBC/Groovy) para '%(nome)s' (pymssql), ignorando texto entre plicas."""
+    if not params:
+        return query, {}
+    out, i, n = [], 0, len(query)
+    while i < n:
+        ch = query[i]
+        if ch == "'":
+            j = i + 1
+            while j < n:
+                if query[j] == "'" and (j + 1 >= n or query[j + 1] != "'"):
+                    break
+                j += 2 if query[j] == "'" else 1
+            out.append(query[i:j + 1].replace("%", "%%"))
+            i = j + 1
+            continue
+        if ch == ":" and i + 1 < n and (query[i + 1].isalpha() or query[i + 1] == "_") and (i == 0 or query[i - 1] != ":"):
+            j = i + 1
+            while j < n and (query[j].isalnum() or query[j] == "_"):
+                j += 1
+            name = query[i + 1:j]
+            if name not in params:
+                raise ValueError(f"parâmetro SQL sem valor: :{name}")
+            out.append(f"%({name})s")
+            i = j
+            continue
+        out.append("%%" if ch == "%" else ch)
+        i += 1
+    return "".join(out), {k: (to_text(v) if isinstance(v, (dict, list)) else v) for k, v in params.items()}
+
+
 def make_env() -> SandboxedEnvironment:
     env = SandboxedEnvironment(undefined=StrictUndefined, autoescape=False, keep_trailing_newline=True,
                                finalize=_finalize)
@@ -368,6 +399,7 @@ class Engine:
         self.counters = {"steps": 0, "http_requests": 0, "emails": 0, "sql_queries": 0}
         self.secrets = [str(v) for c in self.credentials.values() for k, v in c.items()
                         if k in ("password", "token", "value") and v]
+        self.dry_run = bool(job.get("dry_run"))
         self._expr_cache: dict[str, Any] = {}
         self._tpl_cache: dict[str, Any] = {}
 
@@ -399,14 +431,20 @@ class Engine:
     # ------------------------------------------------------------ execução
 
     def run(self) -> dict[str, Any]:
-        ctx: dict[str, Any] = {**self.flow.get("variables", {})}
+        import copy
+
+        # cópia: as listas iniciais não podem ser alteradas na definição (que pode ser reutilizada)
+        ctx: dict[str, Any] = copy.deepcopy(self.flow.get("variables", {}))
         ctx["params"] = self.job.get("parameters") or {}
         ctx["run_id"] = self.job.get("run_id")
         ctx["files"] = self.files
         started = time.monotonic()
         result: dict[str, Any] = {"status": "SUCCEEDED"}
         try:
-            self.run_steps(self.flow["steps"], ctx)
+            if self.flow.get("language") == "groovy":
+                self.run_groovy(ctx)
+            else:
+                self.run_steps(self.flow["steps"], ctx)
         except StopFlow as exc:
             result["stopped"] = str(exc)
         except FlowError as exc:
@@ -417,6 +455,153 @@ class Engine:
         result.update({"files": list(self.files), "counters": self.counters,
                        "duration_seconds": round(time.monotonic() - started, 3)})
         return result
+
+    # ------------------------------------------------------------ robôs Groovy
+
+    def run_groovy(self, ctx: dict[str, Any]) -> None:
+        """Executa o código Groovy numa JVM isolada (BmHost.groovy). As operações com efeitos (http, email, sql,
+        ficheiros) chegam pela ponte e são executadas aqui, com as mesmas regras e credenciais dos passos."""
+        import subprocess
+
+        rt = self.job.get("groovy") or {}
+        if not rt.get("argv"):
+            raise FlowError("groovy", "o worker não tem o Groovy instalado")
+        variables = {k: v for k, v in ctx.items() if k not in ("files", "params", "run_id")}
+        init = {"code": self.flow.get("code", ""), "variables": variables, "params": ctx["params"],
+                "run_id": ctx["run_id"], "out_dir": str(self.out_dir)}
+        proc = subprocess.Popen(rt["argv"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                cwd=str(self.out_dir), env=rt.get("env"), bufsize=0)
+        assert proc.stdin and proc.stdout and proc.stderr
+        write_lock = threading.Lock()
+
+        def send(obj: dict[str, Any]) -> None:
+            data = (json.dumps(obj, default=_json_default, ensure_ascii=False) + "\n").encode("utf-8")
+            with write_lock:
+                try:
+                    proc.stdin.write(data)
+                    proc.stdin.flush()
+                except (BrokenPipeError, OSError):
+                    pass
+
+        stderr_lines: list[str] = []
+
+        def pump_stderr() -> None:
+            from .groovy import is_jvm_noise
+
+            for raw in iter(proc.stderr.readline, b""):
+                line = raw.decode("utf-8", errors="replace").rstrip()
+                if not is_jvm_noise(line) and len(stderr_lines) < 200:
+                    stderr_lines.append(line)
+
+        err_thread = threading.Thread(target=pump_stderr, daemon=True)
+        err_thread.start()
+        send(init)
+        pool = ThreadPoolExecutor(max_workers=20, thread_name_prefix="groovy-op")
+        end: dict[str, Any] | None = None
+        n_calls = 0
+
+        def handle(req: dict[str, Any]) -> None:
+            try:
+                value = self._groovy_op(f"g{req['id']}", req["op"], req.get("args") or {})
+                send({"id": req["id"], "ok": True, "value": value})
+            except Exception as exc:  # noqa: BLE001 - o erro volta para o código Groovy (pode ser tratado com try)
+                send({"id": req["id"], "ok": False, "error": redact_text(f"{type(exc).__name__}: {exc}", self.secrets)})
+
+        try:
+            for raw in iter(proc.stdout.readline, b""):
+                line = raw.decode("utf-8", errors="replace").rstrip("\r\n")
+                if line.startswith("@@CALL "):
+                    n_calls += 1
+                    with self.lock:
+                        self.counters["steps"] += 1
+                    pool.submit(handle, json.loads(line[7:]))
+                elif line.startswith("@@LOG "):
+                    m = json.loads(line[6:])
+                    self.log(str(m.get("msg", "")), m.get("level", "INFO"))
+                elif line.startswith("@@END "):
+                    end = json.loads(line[6:])
+                    break
+                elif line.strip():
+                    self.log(line)
+        finally:
+            pool.shutdown(wait=True, cancel_futures=True)
+            try:
+                proc.stdin.close()
+            except OSError:
+                pass
+            try:
+                proc.wait(timeout=15)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+            err_thread.join(timeout=5)
+        if end is None:
+            detail = "\n".join(stderr_lines[-20:]) or f"código {proc.returncode}"
+            raise FlowError("groovy", f"o processo Java terminou sem resultado: {detail}")
+        status = end.get("status")
+        if status == "ok":
+            return
+        if status == "stop":
+            self.log(f"[groovy] fim antecipado: {end.get('message', '')}")
+            raise StopFlow(end.get("message", ""))
+        if status == "error":  # compilação ou código recusado
+            msgs = "; ".join(f"linha {e.get('line')}: {e.get('message')}" for e in end.get("errors", []))
+            raise FlowError("compilação", msgs or "erro de compilação")
+        where = f"linha {end['line']}" if end.get("line") else "groovy"
+        raise FlowError(where, str(end.get("message", "erro")))
+
+    def _groovy_op(self, sid: str, op: str, a: dict[str, Any]) -> Any:
+        if op == "http":
+            body = a.get("body") or {}
+            headers = {str(k): to_text(v) for k, v in (a.get("headers") or {}).items()}
+            content = None
+            if "json" in body:
+                content = json.dumps(body["json"], default=_json_default, ensure_ascii=False)
+                headers.setdefault("Content-Type", "application/json")
+            elif "text" in body:
+                content = body["text"]
+            expect = a.get("esperar") or [200, 201, 202, 204]
+            if not isinstance(expect, list):
+                expect = [expect]
+            status, value = self.http_call(
+                sid, a.get("method", "GET"), str(a["url"]), headers,
+                {str(k): to_text(v) for k, v in (a.get("query") or {}).items()}, content, a.get("credencial"),
+                float(a.get("timeout") or 60), int(a.get("tentativas") or 2),
+                [int(x) for x in expect], {"texto": "text", "json": "json"}.get(a.get("resposta"), "auto"))
+            return value
+        if op == "email":
+            def lst(v):
+                return [to_text(x) for x in v] if isinstance(v, list) else ([to_text(v)] if v else [])
+
+            if not a.get("credencial"):
+                raise ValueError("email.enviar: indique a credencial (credencial: \"smtp-...\")")
+            self.send_email(sid, a["credencial"], lst(a.get("para")), lst(a.get("cc")), to_text(a.get("assunto")),
+                            to_text(a.get("corpo")), lst(a.get("anexos")))
+            return None
+        if op == "sql":
+            query, params = named_to_pyformat(str(a["query"]), a.get("params") or {})
+            return self.sql_run(sid, str(a["credencial"]), query, params, not a.get("escrita"))
+        if op == "file_read":
+            path = self._out_path(str(a["nome"]))
+            return path.read_text(encoding="utf-8-sig") if path.is_file() else None
+        if op == "file_exists":
+            return self._out_path(str(a["nome"])).is_file()
+        if op == "file_write":
+            self.write_text(sid, str(a["nome"]), to_text(a.get("texto")), bool(a.get("acrescentar")))
+            return None
+        if op == "file_csv":
+            linhas = a.get("linhas") or []
+            colunas = a.get("colunas")
+            if not colunas:
+                colunas = list(linhas[0].keys()) if linhas and isinstance(linhas[0], dict) else []
+            rows = []
+            for r in linhas:
+                if isinstance(r, dict):
+                    rows.append([to_text(r.get(c)) for c in colunas])
+                else:
+                    rows.append([to_text(x) for x in (r if isinstance(r, list) else [r])])
+            self.write_csv(sid, str(a["nome"]), [to_text(c) for c in colunas], rows, str(a.get("separador") or ";"))
+            return None
+        raise ValueError(f"operação desconhecida: {op}")
 
     def run_steps(self, steps: list[dict[str, Any]], ctx: dict[str, Any]) -> None:
         for step in steps:
@@ -539,16 +724,36 @@ class Engine:
 
     def step_http_request(self, s, ctx):
         url = self.render(s["url"], ctx)
+        headers = {k: self.render(v, ctx) for k, v in (s.get("headers") or {}).items()}
+        params = {k: self.render(v, ctx) for k, v in (s.get("query") or {}).items()}
+        content: str | None = None
+        if s.get("body_json_expr"):
+            content = json.dumps(self.evaluate(s["body_json_expr"], ctx), default=_json_default)
+            headers.setdefault("Content-Type", "application/json")
+        elif s.get("body_text") is not None:
+            content = self.render(s["body_text"], ctx)
+        status, body = self.http_call(s["id"], s.get("method", "GET"), url, headers, params, content,
+                                      s.get("credential"), s.get("timeout_seconds", 30), int(s.get("retries", 0)),
+                                      s.get("expect_status") or [200], s.get("response", "json"))
+        if s.get("save_as"):
+            ctx[s["save_as"]] = body
+            ctx[f"{s['save_as']}_status"] = status
+
+    def http_call(self, sid: str, method: str, url: str, headers: dict[str, str], params: dict[str, str],
+                  content: str | bytes | None, credential: str | None, timeout: float, retries: int,
+                  expect: list[int], response: str) -> tuple[int, Any]:
+        """Pedido HTTP com as regras dos fluxos: só https, hosts autorizados, credencial do cofre, repetição só em
+        GET/HEAD. Usado pelos passos e pelos robôs Groovy."""
+        method = method.upper()
         parts = urlsplit(url)
         if parts.scheme != "https":
             raise ValueError("só são permitidos pedidos https")
         if self.allowed_hosts and parts.hostname not in self.allowed_hosts:
             raise ValueError(f"host não autorizado: {parts.hostname}")
-        headers = {k: self.render(v, ctx) for k, v in (s.get("headers") or {}).items()}
-        params = {k: self.render(v, ctx) for k, v in (s.get("query") or {}).items()}
+        headers = dict(headers)
         auth = None
-        if s.get("credential"):
-            c = self._cred(s["credential"], {"http_basic", "http_bearer", "http_header"})
+        if credential:
+            c = self._cred(credential, {"http_basic", "http_bearer", "http_header"})
             if c["kind"] == "http_basic":
                 auth = (c["username"], c["password"])
             elif c["kind"] == "http_bearer":
@@ -557,14 +762,15 @@ class Engine:
                 headers[c["header_name"]] = c["value"]
         if params:  # junta aos parâmetros que já estejam no URL (ex.: fields=a&fields=b), sem os substituir
             url = str(httpx.URL(url).copy_merge_params(params))
-        kwargs: dict[str, Any] = {"headers": headers, "auth": auth, "timeout": s.get("timeout_seconds", 30)}
-        if s.get("body_json_expr"):
-            kwargs["content"] = json.dumps(self.evaluate(s["body_json_expr"], ctx), default=_json_default)
-            headers.setdefault("Content-Type", "application/json")
-        elif s.get("body_text") is not None:
-            kwargs["content"] = self.render(s["body_text"], ctx)
-        method = s.get("method", "GET")
-        attempts = 1 + (int(s.get("retries", 0)) if method in ("GET", "HEAD") else 0)
+        if self.dry_run and method not in ("GET", "HEAD"):
+            size = len(content or "")
+            self.log(f"[{sid}] [SIMULAÇÃO] {method} {parts.scheme}://{parts.netloc}{parts.path} não enviado "
+                     f"(corpo com {size} caracteres)", "WARNING")
+            return 0, ({} if response == "json" else "")
+        kwargs: dict[str, Any] = {"headers": headers, "auth": auth, "timeout": timeout}
+        if content is not None:
+            kwargs["content"] = content
+        attempts = 1 + (retries if method in ("GET", "HEAD") else 0)
         for attempt in range(1, attempts + 1):
             t0 = time.monotonic()
             try:
@@ -575,20 +781,24 @@ class Engine:
             except (httpx.TransportError, httpx.HTTPStatusError) as exc:
                 if attempt >= attempts:
                     raise
-                self.log(f"[{s['id']}] {type(exc).__name__}; nova tentativa {attempt + 1}/{attempts}", "WARNING")
+                self.log(f"[{sid}] {type(exc).__name__}; nova tentativa {attempt + 1}/{attempts}", "WARNING")
                 time.sleep(min(2 ** attempt, 15))
         with self.lock:
             self.counters["http_requests"] += 1
         ms = int((time.monotonic() - t0) * 1000)
-        self.log(f"[{s['id']}] {method} {parts.scheme}://{parts.netloc}{parts.path} → {resp.status_code} ({ms} ms)")
+        self.log(f"[{sid}] {method} {parts.scheme}://{parts.netloc}{parts.path} → {resp.status_code} ({ms} ms)")
         if len(resp.content) > MAX_RESPONSE_BYTES:
             raise ValueError("resposta demasiado grande")
-        if resp.status_code not in (s.get("expect_status") or [200]):
+        if resp.status_code not in expect:
             raise ValueError(f"estado HTTP {resp.status_code} inesperado: {resp.text[:300]}")
-        if s.get("save_as"):
-            body = resp.json() if s.get("response", "json") == "json" and resp.content else resp.text
-            ctx[s["save_as"]] = body
-            ctx[f"{s['save_as']}_status"] = resp.status_code
+        if response == "json" and resp.content:
+            return resp.status_code, resp.json()
+        if response == "auto" and resp.content:
+            try:
+                return resp.status_code, resp.json()
+            except ValueError:
+                return resp.status_code, resp.text
+        return resp.status_code, resp.text
 
     def _out_path(self, name: str) -> Path:
         name = name.strip()
@@ -604,38 +814,48 @@ class Engine:
     def step_csv_write(self, s, ctx):
         name = self.render(s["file"], ctx)
         rows = self.evaluate(s["rows_expr"], ctx) or []
+        cells = [[self.render(c["value"], {**ctx, "row": row}) for c in s["columns"]] for row in rows]
+        self.write_csv(s["id"], name, [c["header"] for c in s["columns"]], cells, s.get("delimiter", ";"))
+
+    def write_csv(self, sid: str, name: str, header: list[str], rows: list[list[str]], delimiter: str = ";") -> None:
+        """CSV em UTF-8 com BOM (abre bem no Excel), com proteção contra injeção de fórmulas."""
         path = self._out_path(name)
         with path.open("w", encoding="utf-8-sig", newline="") as fh:
-            w = csv.writer(fh, delimiter=s.get("delimiter", ";"))
-            w.writerow([c["header"] for c in s["columns"]])
+            w = csv.writer(fh, delimiter=delimiter)
+            w.writerow(header)
             for row in rows:
-                local = {**ctx, "row": row}
-                cells = []
-                for c in s["columns"]:
-                    v = self.render(c["value"], local)
-                    # proteção contra injeção de fórmulas no Excel
-                    cells.append("'" + v if v.startswith(CSV_FORMULA_PREFIX) else v)
-                w.writerow(cells)
+                w.writerow(["'" + v if v.startswith(CSV_FORMULA_PREFIX) else v for v in row])
         self._register_file(name)
-        self.log(f"[{s['id']}] ficheiro {name} criado ({len(rows)} linha(s))")
+        self.log(f"[{sid}] ficheiro {name} criado ({len(rows)} linha(s))")
 
     def step_text_write(self, s, ctx):
-        name = self.render(s["file"], ctx)
-        content = self.render(s["content"], ctx)
+        self.write_text(s["id"], self.render(s["file"], ctx), self.render(s["content"], ctx), bool(s.get("append")))
+
+    def write_text(self, sid: str, name: str, content: str, append: bool = False) -> None:
         path = self._out_path(name)
         with self.lock:
-            with path.open("a" if s.get("append") else "w", encoding="utf-8") as fh:
+            with path.open("a" if append else "w", encoding="utf-8") as fh:
                 fh.write(content)
         self._register_file(name)
-        if not s.get("append"):
-            self.log(f"[{s['id']}] ficheiro {name} criado")
+        if not append:
+            self.log(f"[{sid}] ficheiro {name} criado")
 
     def step_email(self, s, ctx):
-        c = self._cred(s["credential"], {"smtp"})
         def addresses(items):  # cada entrada pode ter vários endereços separados por , ou ;
-            return [a.strip() for x in items for a in re.split(r"[,;]", self.render(x, ctx)) if a.strip()]
+            return [self.render(x, ctx) for x in items]
 
-        to, cc = addresses(s["to"]), addresses(s.get("cc", []))
+        self.send_email(s["id"], s["credential"], addresses(s["to"]), addresses(s.get("cc", [])),
+                        self.render(s["subject"], ctx), self.render(s["body"], ctx),
+                        [self.render(a, ctx) for a in s.get("attachments", [])])
+
+    def send_email(self, sid: str, credential: str, to_items: list[str], cc_items: list[str], subject: str, body: str,
+                   attachments: list[str]) -> None:
+        c = self._cred(credential, {"smtp"})
+
+        def split(items):
+            return [a.strip() for x in items for a in re.split(r"[,;]", x) if a.strip()]
+
+        to, cc = split(to_items), split(cc_items)
         if not to:
             raise ValueError("email sem destinatários")
         for addr in to + cc:
@@ -646,14 +866,16 @@ class Engine:
         msg["To"] = ", ".join(to)
         if cc:
             msg["Cc"] = ", ".join(cc)
-        msg["Subject"] = self.render(s["subject"], ctx)
-        msg.set_content(self.render(s["body"], ctx))
-        for a in s.get("attachments", []):
-            name = self.render(a, ctx)
+        msg["Subject"] = subject
+        msg.set_content(body)
+        for name in attachments:
             if name not in self.files:
                 raise ValueError(f"anexo não foi produzido por este fluxo: {name}")
             msg.add_attachment(self._out_path(name).read_bytes(), maintype="application",
                                subtype="octet-stream", filename=name)
+        if self.dry_run:
+            self.log(f"[{sid}] [SIMULAÇÃO] email não enviado: para {', '.join(to + cc)} — {subject}", "WARNING")
+            return
         host, port = c["host"], int(c.get("port") or 587)
         security = c.get("security", "starttls")
         factory = self.smtp_factory or (smtplib.SMTP_SSL if security == "ssl" else smtplib.SMTP)
@@ -667,12 +889,16 @@ class Engine:
             smtp.send_message(msg)
         with self.lock:
             self.counters["emails"] += 1
-        n_att = len(s.get("attachments", []))
-        self.log(f"[{s['id']}] email enviado para {len(to) + len(cc)} destinatário(s), {n_att} anexo(s)")
+        self.log(f"[{sid}] email enviado para {len(to) + len(cc)} destinatário(s), {len(attachments)} anexo(s)")
 
     def step_sql_query(self, s, ctx):
-        c = self._cred(s["credential"], {"mssql"})
         params = {k: self.render(v, ctx) for k, v in (s.get("params") or {}).items()}
+        rows = self.sql_run(s["id"], s["credential"], s["query"], params, s.get("read_only", True))
+        if s.get("save_as"):
+            ctx[s["save_as"]] = rows
+
+    def sql_run(self, sid: str, credential: str, query: str, params: dict[str, Any], read_only: bool) -> list[dict]:
+        c = self._cred(credential, {"mssql"})
         if self.sql_connect is None:
             import pymssql  # dependência opcional: só necessária para fluxos com SQL Server
 
@@ -683,19 +909,20 @@ class Engine:
                        password=c["password"], database=c["database"], login_timeout=30, timeout=600)
         try:
             cur = conn.cursor(as_dict=True)
-            cur.execute(s["query"], params or None)
+            cur.execute(query, params or None)
             rows = cur.fetchall() if cur.description else []
-            if s.get("read_only", True):
+            if read_only or self.dry_run:
                 conn.rollback()  # garante que nada é gravado
+                if self.dry_run and not read_only:
+                    self.log(f"[{sid}] [SIMULAÇÃO] escrita SQL desfeita (rollback)", "WARNING")
             else:
                 conn.commit()
         finally:
             conn.close()
         with self.lock:
             self.counters["sql_queries"] += 1
-        self.log(f"[{s['id']}] consulta SQL devolveu {len(rows)} linha(s)")
-        if s.get("save_as"):
-            ctx[s["save_as"]] = rows
+        self.log(f"[{sid}] consulta SQL devolveu {len(rows)} linha(s)")
+        return rows
 
 
 def main() -> int:

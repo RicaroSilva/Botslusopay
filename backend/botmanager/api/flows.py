@@ -1,6 +1,7 @@
 """Fluxos nativos: criados e editados na aplicação, executados pelo flow runner."""
 from __future__ import annotations
 
+import re
 from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -474,10 +475,112 @@ def get_flow(key: str, request: Request, version: int | None = None, user: User 
 @router.post("/validate")
 def validate_flow(body: FlowSave, user: User = Depends(current_user), db: Session = Depends(get_db)):
     try:
-        service.validate(db, body.definition)
+        flow = service.validate(db, body.definition)
+    except service.GroovyCompileError as exc:
+        return {"valid": False, "error": str(exc), "errors": exc.errors}
     except (ValidationError, ValueError) as exc:
-        return {"valid": False, "error": str(exc)}
-    return {"valid": True}
+        return {"valid": False, "error": str(exc), "errors": _line_errors(str(exc))}
+    out: dict[str, Any] = {"valid": True}
+    if flow.language == "groovy":
+        from ..flows.schema import groovy_credentials
+
+        out["credentials"] = sorted(groovy_credentials(flow.code))
+    return out
+
+
+def _line_errors(msg: str) -> list[dict[str, Any]]:
+    m = re.match(r"linha (\d+): (.*)", msg)
+    return [{"line": int(m.group(1)), "col": 0, "message": m.group(2)}] if m else [{"line": 0, "col": 0, "message": msg}]
+
+
+class CodeIn(BaseModel):
+    code: str = Field(max_length=300_000)
+
+
+@router.post("/check-code")
+def check_code(body: CodeIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    """Verifica código Groovy sem o executar: sintaxe, regras de segurança e credenciais."""
+    from ..flows.schema import groovy_credentials
+
+    errors: list[dict[str, Any]] = []
+    try:
+        service.validate(db, {"language": "groovy", "code": body.code or " "}, compile_groovy=False)
+    except (ValidationError, ValueError) as exc:
+        errors += _line_errors(str(exc).split("\n")[-1] if isinstance(exc, ValidationError) else str(exc))
+    res = service.check_groovy(body.code) if body.code.strip() else {"checked": True, "errors": [], "reason": ""}
+    errors += res["errors"]
+    existing = service.credential_kinds(db)
+    return {"checked": res["checked"], "reason": res["reason"], "errors": errors,
+            "credentials": [{"name": n, "exists": n in existing, "kind": existing.get(n)}
+                            for n in sorted(groovy_credentials(body.code))]}
+
+
+class TransformIn(BaseModel):
+    definition: dict[str, Any]
+    target: Literal["flow", "groovy"]
+    force: bool = False
+
+
+def _transform(definition: dict[str, Any], target: str, force: bool) -> dict[str, Any]:
+    from ..flows.groovy_convert import flow_to_groovy, groovy_to_flow
+    from ..flows.schema import FlowDefinition
+
+    try:
+        current = FlowDefinition.model_validate(definition)
+    except (ValidationError, ValueError) as exc:
+        raise HTTPException(422, f"definição inválida: {exc}") from exc
+    if current.language == target:
+        raise HTTPException(422, f"o robô já está no formato {target}")
+    if target == "groovy":
+        new_def, report = flow_to_groovy(service.dump_definition(current))
+    else:
+        try:
+            ast = service.groovy_tool("ast", current.code)
+        except Exception as exc:  # noqa: BLE001 - Java/Groovy indisponível no servidor
+            raise HTTPException(503, f"a conversão de Groovy para fluxo precisa do Java/Groovy no servidor: {exc}") from exc
+        if ast.get("status") != "ok":
+            raise HTTPException(422, "o código tem erros: " + "; ".join(
+                f"linha {e.get('line')}: {e.get('message')}" for e in ast.get("errors", [])[:5]))
+        new_def, report = groovy_to_flow(service.dump_definition(current), ast, force)
+    return {"definition": new_def, "report": report.items, "complete": report.complete}
+
+
+@router.post("/transform")
+def transform(body: TransformIn, user: User = Depends(current_user)):
+    """Converte entre fluxo e Groovy. Não grava nada: o editor mostra o resultado e o relatório; o utilizador
+    revê e grava como nova versão (as versões anteriores continuam disponíveis)."""
+    return _transform(body.definition, body.target, body.force)
+
+
+class DuplicateIn(BaseModel):
+    key: str
+    name: str = Field(min_length=3, max_length=200)
+    target: Literal["flow", "groovy"] | None = None  # converter ao duplicar
+    force: bool = False
+
+
+@router.post("/{key}/duplicate", status_code=201)
+def duplicate_flow(key: str, body: DuplicateIn, request: Request, user: User = Depends(require_role(Role.ADMIN)),
+                   db: Session = Depends(get_db)):
+    """Novo robô (desativado) a partir da versão em uso de outro, opcionalmente noutro formato."""
+    bot = _flow_bot(db, key)
+    fv = service.get_version(db, bot, bot.current_flow_version)
+    if fv is None:
+        raise HTTPException(409, "o robô não tem versões")
+    definition, report = fv.definition, []
+    if body.target and body.target != definition.get("language", "flow"):
+        res = _transform(definition, body.target, body.force)
+        if not res["complete"] and not body.force:
+            raise HTTPException(422, {"message": "conversão incompleta", "report": res["report"]})
+        definition, report = res["definition"], res["report"]
+    meta = FlowMeta(**{k: v for k, v in bot.definition.items() if k in FlowMeta.model_fields
+                       and k not in ("concurrency",)})
+    meta.name = body.name
+    meta.concurrency = (bot.definition.get("concurrency") or {}).get("policy", "single")
+    created = create_flow(FlowCreate(**meta.model_dump(), key=body.key, definition=definition,
+                                     comment=f"duplicado de {key} v{fv.version}"), request, user, db)
+    created["report"] = report
+    return created
 
 
 @router.put("/{key}")

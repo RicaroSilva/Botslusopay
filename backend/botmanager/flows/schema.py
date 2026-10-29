@@ -341,14 +341,45 @@ CREDENTIAL_KINDS_BY_STEP = {
 FILE_NAME_RE = re.compile(r"^[^\\/:*?\"<>|{}]{1,200}$")
 
 
+GROOVY_MAX_CHARS = 300_000
+# credencial: "nome" (http e email) e sql.consultar("nome", ...) / sql.executar("nome", ...)
+_GROOVY_CRED = re.compile(r"""\bcredencial\s*:\s*(?P<q>["'])(?P<name>[^"'$\\]+)(?P=q)""")
+_GROOVY_SQL_CRED = re.compile(r"""\bsql\s*\.\s*(?:consultar|executar)\s*\(\s*(?P<q>["'])(?P<name>[^"'$\\]+)(?P=q)""")
+_GROOVY_DYNAMIC_CRED = re.compile(r"""\bcredencial\s*:(?!\s*["'])|\bsql\s*\.\s*(?:consultar|executar)\s*\((?!\s*["'])""")
+_GROOVY_URL = re.compile(r"""["']https?://([^/:"'$\s]+)""")
+
+
+def groovy_credentials(code: str) -> set[str]:
+    """Credenciais referidas no código Groovy (o nome tem de estar escrito diretamente no código)."""
+    return {m.group("name") for rx in (_GROOVY_CRED, _GROOVY_SQL_CRED) for m in rx.finditer(code)}
+
+
 class FlowDefinition(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    # flow = passos (editor visual); groovy = código (editor Java/Groovy). As versões, execuções, credenciais,
+    # ficheiros persistentes e agendamentos são comuns aos dois formatos.
+    language: Literal["flow", "groovy"] = "flow"
     description: str = ""
     variables: dict[str, Any] = {}  # valores iniciais (não sensíveis)
     # Ficheiros que se mantêm entre execuções (ex.: controlo do último registo processado)
     persistent_files: list[str] = Field(default=[], max_length=50)
-    steps: list[Step] = Field(min_length=1)
+    steps: list[Step] = []
+    code: str = Field(default="", max_length=GROOVY_MAX_CHARS)
+
+    @model_validator(mode="after")
+    def _format(self) -> "FlowDefinition":
+        if self.language == "flow":
+            if not self.steps:
+                raise ValueError("o fluxo precisa de pelo menos um passo")
+            if self.code:
+                raise ValueError("um fluxo visual não tem código (use language=groovy)")
+        else:
+            if not self.code.strip():
+                raise ValueError("o robô Groovy não tem código")
+            if self.steps:
+                raise ValueError("um robô Groovy não tem passos (use language=flow)")
+        return self
 
     @field_validator("persistent_files")
     @classmethod
@@ -377,6 +408,8 @@ def iter_steps(steps: list[Any], depth: int = 1):
 def validate_flow(raw: dict[str, Any], credentials: dict[str, str], allowed_hosts: list[str]) -> FlowDefinition:
     """Valida estrutura, modelos, ids únicos, credenciais e hosts. `credentials` = {nome: tipo}."""
     flow = FlowDefinition.model_validate(raw)
+    if flow.language == "groovy":
+        return _validate_groovy(flow, credentials, allowed_hosts)
     ids: set[str] = set()
     count = 0
     for st, depth in iter_steps(flow.steps):
@@ -402,7 +435,25 @@ def validate_flow(raw: dict[str, Any], credentials: dict[str, str], allowed_host
     return flow
 
 
+def _validate_groovy(flow: FlowDefinition, credentials: dict[str, str], allowed_hosts: list[str]) -> FlowDefinition:
+    """Validação estática; a sintaxe é verificada pelo compilador do Groovy (flows.service.check_groovy)."""
+    m = _GROOVY_DYNAMIC_CRED.search(flow.code)
+    if m:
+        line = flow.code.count("\n", 0, m.start()) + 1
+        raise ValueError(f"linha {line}: o nome da credencial tem de estar escrito entre aspas (ex.: credencial: \"cyclos-producao\")")
+    for name in sorted(groovy_credentials(flow.code)):
+        if name not in credentials:
+            raise ValueError(f"credencial inexistente '{name}' (crie-a em Administração → Credenciais)")
+    if allowed_hosts:
+        for m in _GROOVY_URL.finditer(flow.code):
+            if m.group(1) not in allowed_hosts:
+                raise ValueError(f"host '{m.group(1)}' não autorizado (BM_FLOW_ALLOWED_HOSTS)")
+    return flow
+
+
 def referenced_credentials(flow: FlowDefinition) -> set[str]:
+    if flow.language == "groovy":
+        return groovy_credentials(flow.code)
     return {c for st, _ in iter_steps(flow.steps) if (c := getattr(st, "credential", None))}
 
 

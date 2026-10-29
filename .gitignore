@@ -31,3 +31,6 @@ Thumbs.db
 .vscode/
 .idea/
 tsconfig.tsbuildinfo
+
+# Groovy (descarregado por python -m lusopay_worker.groovy setup)
+worker/lib/

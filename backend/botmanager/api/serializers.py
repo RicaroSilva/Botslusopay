@@ -76,6 +76,7 @@ def run_brief(r: Run) -> dict[str, Any]:
         "finished_at": _iso(r.finished_at),
         "failure_reason": r.failure_reason,
         "needs_review": r.needs_review,
+        "dry_run": r.dry_run,
     }
 
 
@@ -99,6 +100,7 @@ def run_out(r: Run, usernames: dict[str, str]) -> dict[str, Any]:
             "result_summary": r.result_summary,
             "worker_id": r.worker_id,
             "flow_version": r.flow_version,
+            "dry_run": r.dry_run,
         }
     )
     return out
