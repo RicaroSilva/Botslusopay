@@ -56,6 +56,8 @@ export function clean(steps: Step[]): Step[] {
       }
       out[f.name] = v;
     }
+    // "Definir variável" com texto vazio (ex.: limpar uma variável) é válido: o valor "" não pode desaparecer
+    if (s.type === "set" && out.value === undefined && out.expr === undefined) out.value = "";
     return out;
   });
 }
