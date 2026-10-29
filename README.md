@@ -14,6 +14,7 @@ geridos através do worker Windows.
 | Documento | Conteúdo |
 |---|---|
 | [docs/fluxos.md](docs/fluxos.md) | Fluxos nativos: passos, modelos, credenciais, versões, migração dos bots taskt |
+| [docs/robos-groovy.md](docs/robos-groovy.md) | Robôs em Java/Groovy: editor de código, API, testes em simulação, conversão fluxo ⇄ Groovy, isolamento |
 | [docs/instalacao-docker.md](docs/instalacao-docker.md) | Instalação e operação com Docker (api, scheduler, runner, db) |
 | [docs/inventario-bots.md](docs/inventario-bots.md) | Fase A: o que são os scripts, mecanismo de execução confirmado, bots, dependências |
 | [docs/inventario-detalhado.md](docs/inventario-detalhado.md) | Tabela gerada dos 64 XML (APIs, emails, BD, UI, bloqueios, contagem de segredos) |

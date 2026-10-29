@@ -29,6 +29,8 @@ git pull || echo AVISO: git pull falhou; arranca com a versao atual.
 call backend\.venv\Scripts\activate.bat
 echo === A instalar dependencias ===
 python -m pip install -q -e backend -e worker || goto erro
+echo === Robos Groovy (Java 21) ===
+python -m lusopay_worker.groovy setup || echo AVISO: robos Groovy indisponiveis. Instale o Java 21: winget install EclipseAdoptium.Temurin.21.JRE
 echo === A atualizar a base de dados ===
 pushd backend
 alembic upgrade head || (popd & goto erro)

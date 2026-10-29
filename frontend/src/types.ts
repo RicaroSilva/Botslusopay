@@ -24,6 +24,7 @@ export interface RunBrief {
   finished_at?: string | null;
   failure_reason?: string | null;
   needs_review: boolean;
+  dry_run?: boolean;  // simulação: sem efeitos externos
 }
 
 export interface Run extends RunBrief {
@@ -93,6 +94,7 @@ export interface Bot {
   in_registry: boolean;
   source?: "registry" | "ui";
   current_flow_version?: number | null;
+  flow_language?: "flow" | "groovy" | null;  // formato dos robôs nativos
   requires_approval: boolean;
   triggers_allowed: string[];
   permissions: string[];

@@ -156,6 +156,9 @@ cd worker && pip install -e . && WORKER_BACKEND_URL=http://127.0.0.1:8000 WORKER
 Os bots `[SIMULADO]` (pasta `bots/registry-dev`) só são carregados quando esta pasta está em `BM_EXTRA_REGISTRY_DIRS`.
 Não a configure em produção.
 
+**Robôs Java/Groovy:** instalar o Java 21 (`winget install EclipseAdoptium.Temurin.21.JRE`); os `.bat` descarregam o
+Groovy. O Java 24+ não serve (ver [robos-groovy.md](robos-groovy.md)).
+
 **Windows, num clique:** `iniciar.bat` atualiza (git pull, dependências, migrações, frontend), arranca o backend e o worker
 e abre `http://localhost:8000/admin` (na primeira vez pede o token do worker e grava-o em `worker.token`). `arrancar.bat` (na raiz do repositório) faz `git pull`, instala as dependências, corre
 `alembic upgrade head`, compila o frontend e abre duas janelas, uma com o backend e outra com o worker (adaptador `flow`). O token

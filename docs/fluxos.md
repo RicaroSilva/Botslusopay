@@ -1,8 +1,12 @@
 # Fluxos nativos (substituto do taskt/OpenBots)
 
 Os fluxos nativos são executados pelo próprio Bot Manager, no contentor **runner**, sem taskt, sem OpenBots e sem
-desktop Windows. São criados e editados na aplicação: **Catálogo → + Novo fluxo** (administradores) ou
-**Detalhe do bot → Editar fluxo** (quem tem a permissão *configure* no bot).
+desktop Windows. São criados e editados na aplicação: **Catálogo → + Novo robô → Criar robô por fluxo**
+(administradores) ou **Detalhe do bot → Editar fluxo** (quem tem a permissão *configure* no bot).
+
+Também se podem criar robôs em **código Java/Groovy** e converter entre os dois formatos: ver
+[robos-groovy.md](robos-groovy.md). O botão **▶ Testar (simulação)** do editor serve para os dois formatos (corre sem
+POST/PUT/DELETE, emails nem escritas SQL).
 
 Tudo o que já existia continua a aplicar-se: botão Executar, aprovações (marcadas por omissão em risco elevado; só um
 administrador as pode dispensar, e fica auditado; as execuções pedidas por um administrador não esperam

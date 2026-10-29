@@ -29,7 +29,7 @@ export function BotDetail() {
         </div>
         <div className="actions">
           {bot.adapter === "flow" && bot.permissions.includes("configure") && (
-            <Link className="btn" to={`/flows/${bot.key}`}>Editar fluxo</Link>
+            <Link className="btn" to={`/flows/${bot.key}`}>{bot.flow_language === "groovy" ? "Editar código" : "Editar fluxo"}</Link>
           )}
           {bot.adapter === "flow" && !bot.permissions.includes("configure") && (
             <Link className="btn" to={`/flows/${bot.key}`}>Ver fluxo</Link>
@@ -52,7 +52,7 @@ export function BotDetail() {
             items={[
               ["Identificador", <code>{bot.key}</code>],
               ["Adaptador", <code>{bot.adapter}</code>],
-              ["Ficheiro de entrada", bot.adapter === "flow" ? `Fluxo nativo (versão ${bot.current_flow_version})` : <code>{bot.project_ref}</code>],
+              ["Ficheiro de entrada", bot.adapter === "flow" ? `${bot.flow_language === "groovy" ? "Robô Java/Groovy" : "Fluxo nativo"} (versão ${bot.current_flow_version})` : <code>{bot.project_ref}</code>],
               ["Mecanismo validado", bot.execution_validated ? "Sim" : "Não"],
               ["Timeout", `${Math.round((bot.timeout_seconds ?? 0) / 60)} min`],
               ["Concorrência", `${bot.concurrency?.policy === "single" ? "Uma execução de cada vez" : "Paralela"}${

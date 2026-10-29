@@ -1,8 +1,12 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import { ApiError, api } from "../api";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { ApiError, api, newIdempotencyKey } from "../api";
 import { useAuth, hasRole } from "../auth";
+import type { CodeEditorHandle, CodeError } from "../components/CodeEditor";
+import { ConvertDialog, DuplicateDialog, LANGUAGE_LABEL, type RobotLanguage } from "../components/RobotDialogs";
+import { TestConsole } from "../components/TestConsole";
 import { Card, ErrorBox } from "../components/ui";
+import { GROOVY_API, NEW_GROOVY_ROBOT } from "../groovyApi";
 import { SPEC_BY_TYPE, STEP_SPECS, newStepId, type FieldSpec } from "../flowSteps";
 import { fmtDate } from "../format";
 import { FlowFiles } from "./FlowFiles";
@@ -14,7 +18,8 @@ interface FlowData {
   bot: Bot;
   current_version: number | null;
   version: number | null;
-  definition: { description?: string; variables?: Record<string, unknown>; persistent_files?: string[]; steps: Step[] } | null;
+  definition: { language?: string; description?: string; variables?: Record<string, unknown>; persistent_files?: string[];
+                steps?: Step[]; code?: string } | null;
   versions: { version: number; comment: string; created_at: string; created_by: string | null }[];
 }
 
@@ -230,15 +235,21 @@ function StepList({ steps, onChange, credentials, depth }: {
   );
 }
 
+// o editor de código (CodeMirror) só é descarregado quando se abre um robô Groovy
+const CodeEditor = lazy(() => import("../components/CodeEditor").then((m) => ({ default: m.CodeEditor })));
+
 export function FlowEditor() {
   const { key } = useParams();
   const isNew = !key;
   const navigate = useNavigate();
+  const [search] = useSearchParams();
   const { user } = useAuth();
   const [meta, setMeta] = useState({ ...EMPTY_META });
+  const [language, setLanguage] = useState<RobotLanguage>(search.get("tipo") === "groovy" ? "groovy" : "flow");
   const [steps, setSteps] = useState<Step[]>([]);
+  const [code, setCode] = useState(search.get("tipo") === "groovy" ? NEW_GROOVY_ROBOT : "");
   const [description, setDescription] = useState("");
-  // resto da definição (variáveis, ficheiros persistentes…) que o editor visual não mostra mas tem de manter
+  // resto da definição (variáveis, ficheiros persistentes…) que o editor não mostra diretamente mas tem de manter
   const [rest, setRest] = useState<Record<string, unknown>>({});
   const [data, setData] = useState<FlowData | null>(null);
   const [credentials, setCredentials] = useState<CredentialRow[]>([]);
@@ -247,22 +258,42 @@ export function FlowEditor() {
   const [info, setInfo] = useState<string | null>(null);
   const [jsonMode, setJsonMode] = useState(false);
   const [jsonText, setJsonText] = useState("");
+  const [codeErrors, setCodeErrors] = useState<CodeError[]>([]);
+  const [codeCreds, setCodeCreds] = useState<{ name: string; exists: boolean }[] | null>(null);
+  const [saved, setSaved] = useState<string>("");  // estado gravado (para detetar alterações por guardar)
+  const [testRun, setTestRun] = useState<string | null>(null);
+  const [converting, setConverting] = useState<RobotLanguage | null>(null);
+  const [duplicating, setDuplicating] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const editor = useRef<CodeEditorHandle>(null);
+
+  const snapshot = (m: typeof meta, def: unknown) => JSON.stringify({ m, def });
 
   const load = async (version?: number) => {
-    if (isNew) return;
+    if (isNew) {
+      setSaved(snapshot(EMPTY_META, null));
+      return;
+    }
     const d = await api.get<FlowData>(`/api/flows/${key}${version ? `?version=${version}` : ""}`);
     setData(d);
-    setSteps((d.definition?.steps as Step[]) ?? []);
-    setDescription(d.definition?.description ?? "");
-    const { description: _d, steps: _s, ...others } = d.definition ?? { steps: [] };
+    const def = d.definition ?? { steps: [] };
+    const lang = (def.language as RobotLanguage) ?? "flow";
+    setLanguage(lang);
+    setSteps((def.steps as Step[]) ?? []);
+    setCode((def.code as string) ?? "");
+    setDescription(def.description ?? "");
+    const { description: _d, steps: _s, code: _c, language: _l, ...others } = def;
     setRest(others);
+    setCodeErrors([]);
     const b = d.bot;
-    setMeta({
+    const m = {
       key: b.key, name: b.name, description: b.description, category: b.category, risk_level: b.risk_level,
       timeout_seconds: b.timeout_seconds ?? 1800, triggers_allowed: b.triggers_allowed,
       requires_approval: b.requires_approval, concurrency: b.concurrency?.policy ?? "single",
       external_effects: b.external_effects ?? [], prerequisites: b.prerequisites ?? [],
-    });
+    };
+    setMeta(m);
+    setSaved(version && version !== d.current_version ? "" : snapshot(m, buildFrom(lang, others, def.description ?? "", (def.steps as Step[]) ?? [], (def.code as string) ?? "")));
   };
 
   useEffect(() => {
@@ -273,29 +304,52 @@ export function FlowEditor() {
 
   const definition = () => {
     if (jsonMode) return JSON.parse(jsonText);
-    return buildDefinition();
+    return buildFrom(language, rest, description, steps, code);
   };
-  const buildDefinition = () => {
-    const def: Record<string, unknown> = { ...rest, description, steps: clean(steps) };
-    if (!(def.persistent_files as string[] | undefined)?.length) delete def.persistent_files;
-    return def;
-  };
-  const persistentNames = (rest.persistent_files as string[] | undefined) ?? [];
+  const currentSnapshot = (() => { try { return snapshot(meta, definition()); } catch { return "json-invalido"; } })();
+  const dirty = saved !== "" ? currentSnapshot !== saved : true;
 
-  async function validate() {
+  useEffect(() => {  // aviso ao sair da página com alterações por guardar
+    const h = (e: BeforeUnloadEvent) => { if (dirty && !isNew) { e.preventDefault(); e.returnValue = ""; } };
+    window.addEventListener("beforeunload", h);
+    return () => window.removeEventListener("beforeunload", h);
+  }, [dirty, isNew]);
+
+  const persistentNames = (rest.persistent_files as string[] | undefined) ?? [];
+  const variables = (rest.variables as Record<string, unknown> | undefined) ?? {};
+
+  async function validate(): Promise<boolean> {
     setError(null); setInfo(null);
     try {
+      if (language === "groovy" && !jsonMode) {
+        const r = await api.post<{ checked: boolean; reason: string; errors: CodeError[]; credentials: { name: string; exists: boolean }[] }>(
+          "/api/flows/check-code", { code });
+        setCodeErrors(r.errors);
+        setCodeCreds(r.credentials);
+        if (r.errors.length) {
+          setError(`${r.errors.length} erro(s) no código: ` + r.errors.slice(0, 3).map((e) => `linha ${e.line}: ${e.message}`).join("; "));
+          if (r.errors[0].line) editor.current?.gotoLine(r.errors[0].line);
+          return false;
+        }
+        const missing = r.credentials.filter((c) => !c.exists);
+        if (missing.length) { setError(`Credenciais inexistentes: ${missing.map((c) => c.name).join(", ")}`); return false; }
+        setInfo(r.checked ? "Código válido (sintaxe e regras de segurança verificadas)."
+          : `Estrutura válida. A sintaxe será verificada ao executar (${r.reason}).`);
+        return true;
+      }
       const r = await api.post<{ valid: boolean; error?: string }>("/api/flows/validate", { definition: definition() });
-      if (r.valid) setInfo("Fluxo válido."); else setError(r.error ?? "inválido");
-    } catch (e) { setError((e as Error).message); }
+      if (r.valid) setInfo("Robô válido."); else setError(r.error ?? "inválido");
+      return r.valid;
+    } catch (e) { setError(e instanceof SyntaxError ? "JSON inválido" : (e as Error).message); return false; }
   }
 
-  async function save() {
-    setError(null); setInfo(null);
+  async function save(): Promise<boolean> {
+    setError(null); setInfo(null); setBusy(true);
     try {
       const def = definition();
       if (isNew) {
         await api.post("/api/flows", { ...meta, definition: def, comment: comment || "versão inicial" });
+        setSaved(snapshot(meta, def));
         navigate(`/flows/${meta.key}`);
       } else {
         await api.patch(`/api/flows/${key}`, { ...meta });
@@ -304,40 +358,132 @@ export function FlowEditor() {
         setComment("");
         await load();
       }
+      return true;
     } catch (e) {
-      setError(e instanceof SyntaxError ? "JSON inválido" : (e as ApiError).message);
+      const msg = e instanceof SyntaxError ? "JSON inválido" : (e as ApiError).message;
+      setError(msg);
+      const lines = [...msg.matchAll(/linha (\d+): ([^;]+)/g)].map((m) => ({ line: Number(m[1]), message: m[2] }));
+      if (language === "groovy" && lines.length) { setCodeErrors(lines); editor.current?.gotoLine(lines[0].line); }
+      return false;
+    } finally { setBusy(false); }
+  }
+
+  async function test() {
+    if (isNew) { setError("Crie o robô antes de o testar."); return; }
+    if (dirty) {
+      if (!confirm("Há alterações por guardar. Gravar uma nova versão e testar?")) return;
+      if (!(await save())) return;
     }
+    setError(null);
+    try {
+      const r = await api.post<{ run_id: string }>(`/api/bots/${key}/run`, { parameters: {}, idempotency_key: newIdempotencyKey(), dry_run: true });
+      setTestRun(r.run_id);
+    } catch (e) { setError((e as ApiError).message); }
+  }
+
+  async function remove() {
+    if (!confirm(`Eliminar o robô "${meta.name}"? Se já tiver execuções fica arquivado (escondido), para manter o histórico.`)) return;
+    try { await api.del(`/api/flows/${key}`); navigate("/bots"); } catch (e) { setError((e as ApiError).message); }
   }
 
   const toggleJson = () => {
-    if (!jsonMode) setJsonText(JSON.stringify(buildDefinition(), null, 2));
+    if (!jsonMode) setJsonText(JSON.stringify(buildFrom(language, rest, description, steps, code), null, 2));
     else {
       try {
-        const { description: d, steps: st, ...others } = JSON.parse(jsonText);
-        setSteps(st ?? []); setDescription(d ?? ""); setRest(others);
+        const { description: d, steps: st, code: c, language: l, ...others } = JSON.parse(jsonText);
+        setLanguage(l === "groovy" ? "groovy" : "flow");
+        setSteps(st ?? []); setCode(c ?? ""); setDescription(d ?? ""); setRest(others);
       }
       catch { setError("JSON inválido"); return; }
     }
     setJsonMode(!jsonMode);
   };
 
+  function applyConversion(def: Record<string, unknown>) {
+    const { description: d, steps: st, code: c, language: l, ...others } = def;
+    setLanguage(l === "groovy" ? "groovy" : "flow");
+    setSteps((st as Step[]) ?? []);
+    setCode((c as string) ?? "");
+    setDescription((d as string) ?? "");
+    setRest(others);
+    setCodeErrors([]);
+    setConverting(null);
+    setComment(`convertido para ${LANGUAGE_LABEL[l === "groovy" ? "groovy" : "flow"]}`);
+    setInfo("Conversão aberta no editor. Reveja e carregue em \"Gravar nova versão\"; a versão anterior continua no histórico.");
+  }
+
   const viewingOld = data && data.version !== data.current_version;
+  const isAdmin = hasRole(user, "admin");
+  const other: RobotLanguage = language === "groovy" ? "flow" : "groovy";
   return (
     <>
       <div className="page-head">
         <div>
           <Link to={isNew ? "/bots" : `/bots/${key}`} className="muted">← {isNew ? "Catálogo" : "Detalhe do bot"}</Link>
-          <h1>{isNew ? "Novo fluxo" : `Editar fluxo: ${meta.name}`}</h1>
-          {data && <span className="muted">Versão em uso: {data.current_version}{viewingOld && ` · a ver versão ${data.version}`}</span>}
+          <h1>{isNew ? "Novo robô" : meta.name}</h1>
+          <div className="badges">
+            <span className={`badge lang-${language}`}>{LANGUAGE_LABEL[language]}</span>
+            {data && <span className={`badge ${data.bot.enabled ? "status-succeeded" : "avail-disabled"}`}>{data.bot.enabled ? "Ativo" : "Desativado"}</span>}
+            {data && <span className="badge">versão em uso {data.current_version}{viewingOld && ` · a ver a versão ${data.version}`}</span>}
+            {dirty && !isNew && <span className="badge status-waiting_approval">● alterações por guardar</span>}
+          </div>
         </div>
         <div className="actions">
-          <button className="btn" onClick={toggleJson}>{jsonMode ? "Editor visual" : "Ver JSON"}</button>
+          {language === "flow" && <button className="btn" onClick={toggleJson}>{jsonMode ? "Editor visual" : "Ver JSON"}</button>}
           <button className="btn" onClick={validate}>Validar</button>
-          <button className="btn btn-primary" onClick={save}>{isNew ? "Criar fluxo" : "Gravar nova versão"}</button>
+          {!isNew && <button className="btn" onClick={test} title="Executa sem efeitos externos: só leituras">▶ Testar (simulação)</button>}
+          <button className="btn" disabled={jsonMode} onClick={() => setConverting(other)}>Converter para {LANGUAGE_LABEL[other]}</button>
+          {!isNew && isAdmin && <button className="btn" onClick={() => setDuplicating(true)}>Duplicar</button>}
+          {!isNew && isAdmin && <button className="btn btn-danger" onClick={remove}>Eliminar</button>}
+          <button className="btn btn-primary" disabled={busy} onClick={save}>{isNew ? "Criar robô" : "Gravar nova versão"}</button>
         </div>
       </div>
       <ErrorBox error={error} />
       {info && <div className="alert alert-info">{info}</div>}
+      {testRun && <TestConsole runId={testRun} onClose={() => setTestRun(null)}
+        onGotoLine={language === "groovy" ? (n) => editor.current?.gotoLine(n) : undefined} />}
+      {language === "groovy" && !jsonMode ? (
+        <div className="code-layout">
+          <Card title="Código Groovy" actions={<span className="muted small">Ctrl+S grava · Ctrl+Espaço sugere</span>}>
+            <label>Descrição<input value={description} onChange={(e) => setDescription(e.target.value)} /></label>
+            <Suspense fallback={<p className="muted">A carregar o editor…</p>}>
+              <CodeEditor ref={editor} value={code} errors={codeErrors} onSave={save}
+                onChange={(v) => { setCode(v); if (codeErrors.length) setCodeErrors([]); }} />
+            </Suspense>
+            <label>Comentário da versão<input value={comment} maxLength={300} placeholder="o que mudou?"
+              onChange={(e) => setComment(e.target.value)} /></label>
+          </Card>
+          <div>
+            <Card title="Credenciais usadas">
+              {codeCreds === null ? <p className="muted small">Carregue em Validar para ver as credenciais que o código usa.</p>
+                : codeCreds.length ? (
+                  <ul className="plain">{codeCreds.map((c) => <li key={c.name}>{c.exists ? "✅" : "❌ não existe:"} <code>{c.name}</code></li>)}</ul>
+                ) : <p className="muted small">O código não usa credenciais.</p>}
+              <p className="muted small">O nome da credencial tem de estar escrito no código (ex.: <code>credencial: "cyclos-producao"</code>).
+                As passwords nunca ficam no código.</p>
+            </Card>
+            <GroovyHelp onInsert={(t) => setCode(code + (code.endsWith("\n") ? "" : "\n") + t + "\n")} />
+          </div>
+        </div>
+      ) : (
+        <Card title="Passos do fluxo" actions={<span className="muted small">
+          Variáveis: <code>{"{{ resposta }}"}</code> · funções: <code>now()</code>, <code>today()</code>, <code>first_day_of_month(-1)</code> ·
+          filtros: <code>date('%Y-%m-%d')</code>, <code>add_days(-1)</code>, <code>money</code>, <code>tojson</code>, <code>length</code></span>}>
+          {jsonMode ? (
+            <textarea className="mono" rows={30} value={jsonText} onChange={(e) => setJsonText(e.target.value)} />
+          ) : (
+            <>
+              <label>Descrição do fluxo<input value={description} onChange={(e) => setDescription(e.target.value)} /></label>
+              {!credentials.length && isAdmin && (
+                <p className="alert alert-warn">Ainda não há credenciais. Crie-as em Administração → Credenciais antes de usar APIs, email ou SQL.</p>
+              )}
+              <StepList steps={steps} onChange={setSteps} credentials={credentials} depth={0} />
+            </>
+          )}
+          <label>Comentário da versão<input value={comment} maxLength={300} placeholder="o que mudou?"
+            onChange={(e) => setComment(e.target.value)} /></label>
+        </Card>
+      )}
       <div className="grid-2">
         <Card title="Identificação">
           <div className="form-grid">
@@ -371,11 +517,11 @@ export function FlowEditor() {
               </select>
             </label>
             <label className="check"><input type="checkbox" checked={meta.requires_approval}
-              disabled={meta.risk_level === "high" && !hasRole(user, "admin")}
+              disabled={meta.risk_level === "high" && !isAdmin}
               onChange={(e) => setMeta({ ...meta, requires_approval: e.target.checked })} />
               Exigir aprovação</label>
             {meta.risk_level === "high" && !meta.requires_approval && (
-              <p className="alert alert-warn span-2">Fluxo de risco elevado sem aprovação: qualquer operador com
+              <p className="alert alert-warn span-2">Robô de risco elevado sem aprovação: qualquer operador com
                 permissão de execução o pode correr de imediato. Fica registado na auditoria.</p>
             )}
             <fieldset className="span-2">
@@ -393,23 +539,10 @@ export function FlowEditor() {
           </div>
         </Card>
       </div>
-      <Card title="Passos do fluxo" actions={<span className="muted small">
-        Variáveis: <code>{"{{ resposta }}"}</code> · funções: <code>now()</code>, <code>today()</code>, <code>first_day_of_month(-1)</code> ·
-        filtros: <code>date('%Y-%m-%d')</code>, <code>add_days(-1)</code>, <code>money</code>, <code>tojson</code>, <code>length</code></span>}>
-        {jsonMode ? (
-          <textarea className="mono" rows={30} value={jsonText} onChange={(e) => setJsonText(e.target.value)} />
-        ) : (
-          <>
-            <label>Descrição do fluxo<input value={description} onChange={(e) => setDescription(e.target.value)} /></label>
-            {!credentials.length && hasRole(user, "admin") && (
-              <p className="alert alert-warn">Ainda não há credenciais. Crie-as em Administração → Credenciais antes de usar APIs, email ou SQL.</p>
-            )}
-            <StepList steps={steps} onChange={setSteps} credentials={credentials} depth={0} />
-          </>
-        )}
-        <label>Comentário da versão<input value={comment} maxLength={300} placeholder="o que mudou?"
-          onChange={(e) => setComment(e.target.value)} /></label>
-      </Card>
+      {!jsonMode && (
+        <VariablesCard value={variables} language={language}
+          onChange={(v) => setRest({ ...rest, variables: v })} />
+      )}
       {!isNew && key && (
         <FlowFiles flowKey={key} names={persistentNames} canEdit={!viewingOld}
           onNamesChange={(n) => setRest({ ...rest, persistent_files: n })} />
@@ -423,14 +556,124 @@ export function FlowEditor() {
                 <tr key={v.version}>
                   <td>{v.version}{v.version === data.current_version && " (em uso)"}</td>
                   <td>{v.comment}</td><td>{v.created_by ?? "—"}</td><td>{fmtDate(v.created_at)}</td>
-                  <td><button className="btn btn-small" onClick={() => load(v.version)}>Abrir</button></td>
+                  <td><button className="btn btn-small" onClick={() => {
+                    if (dirty && !confirm("Há alterações por guardar que se perdem. Abrir a versão?")) return;
+                    load(v.version);
+                  }}>Abrir</button></td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <p className="muted small">Abrir uma versão antiga e gravar cria uma nova versão com esse conteúdo (reverter).</p>
+          <p className="muted small">Abrir uma versão antiga e gravar cria uma nova versão com esse conteúdo (reverter).
+            Também serve para voltar ao formato anterior depois de uma conversão.</p>
         </Card>
       )}
+      {converting && (
+        <ConvertDialog definition={(() => { try { return definition(); } catch { return {}; } })()} target={converting}
+          onApply={applyConversion} onClose={() => setConverting(null)} />
+      )}
+      {duplicating && key && (
+        <DuplicateDialog flowKey={key} name={meta.name} language={language} onClose={() => setDuplicating(false)} />
+      )}
     </>
+  );
+}
+
+function buildFrom(language: RobotLanguage, rest: Record<string, unknown>, description: string, steps: Step[], code: string) {
+  const def: Record<string, unknown> = language === "groovy"
+    ? { ...rest, language: "groovy", description, code }
+    : { ...rest, description, steps: clean(steps) };
+  if (!(def.persistent_files as string[] | undefined)?.length) delete def.persistent_files;
+  return def;
+}
+
+type VarType = "texto" | "número" | "sim/não" | "JSON";
+function typeOf(v: unknown): VarType {
+  if (typeof v === "number") return "número";
+  if (typeof v === "boolean") return "sim/não";
+  if (v !== null && typeof v === "object") return "JSON";
+  return "texto";
+}
+
+/** Variáveis do robô (valores iniciais, não sensíveis). Nos fluxos usam-se como {{ nome }}; no Groovy pelo nome. */
+function VariablesCard({ value, language, onChange }: {
+  value: Record<string, unknown>; language: RobotLanguage; onChange: (v: Record<string, unknown>) => void;
+}) {
+  const entries = Object.entries(value);
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const set = (name: string, v: unknown) => onChange({ ...value, [name]: v });
+  const convert = (raw: string, t: VarType): unknown => {
+    if (t === "número") return Number(raw.replace(",", ".")) || 0;
+    if (t === "sim/não") return raw === "true";
+    if (t === "JSON") { try { return JSON.parse(raw); } catch { return raw; } }
+    return raw;
+  };
+  return (
+    <Card title="Variáveis e configuração">
+      <p className="muted small">
+        Valores iniciais usados pelo robô ({language === "groovy" ? <>no código, pelo nome: <code>email_teste</code></> : <code>{"{{ email_teste }}"}</code>}).
+        Não ponha aqui passwords: use as credenciais.
+      </p>
+      <table>
+        <thead><tr><th>Nome</th><th>Tipo</th><th>Valor</th><th></th></tr></thead>
+        <tbody>
+          {entries.map(([name, v]) => {
+            const t = typeOf(v);
+            const shown = drafts[name] ?? (t === "JSON" ? JSON.stringify(v) : String(v ?? ""));
+            return (
+              <tr key={name}>
+                <td><code>{name}</code></td>
+                <td>
+                  <select value={t} onChange={(e) => set(name, convert(shown, e.target.value as VarType))}>
+                    {(["texto", "número", "sim/não", "JSON"] as VarType[]).map((x) => <option key={x}>{x}</option>)}
+                  </select>
+                </td>
+                <td>
+                  {t === "sim/não" ? (
+                    <select value={String(v)} onChange={(e) => set(name, e.target.value === "true")}>
+                      <option value="true">sim</option><option value="false">não</option>
+                    </select>
+                  ) : (
+                    <input className={t === "JSON" ? "mono" : ""} value={shown}
+                      onChange={(e) => { setDrafts({ ...drafts, [name]: e.target.value }); set(name, convert(e.target.value, t)); }} />
+                  )}
+                </td>
+                <td><button className="btn btn-small" onClick={() => { const { [name]: _x, ...r } = value; onChange(r); }}>Retirar</button></td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <button className="btn btn-small" onClick={() => {
+        const name = prompt("Nome da variável (letras, números e _):")?.trim();
+        if (!name) return;
+        if (!/^[A-Za-z_À-ÿ][\wÀ-ÿ]*$/.test(name)) { alert("Nome inválido"); return; }
+        if (name in value) { alert("Já existe"); return; }
+        set(name, "");
+      }}>+ Variável</button>
+    </Card>
+  );
+}
+
+/** Ajuda da API dos robôs Groovy, com exemplos para inserir no código. */
+function GroovyHelp({ onInsert }: { onInsert: (text: string) => void }) {
+  const groups = [...new Set(GROOVY_API.map((e) => e.group))];
+  return (
+    <Card title="Ajuda">
+      <p className="muted small">Groovy é Java com menos código (como nos scripts do Cyclos). Clique num exemplo para o inserir no fim do código.</p>
+      {groups.map((g) => (
+        <details key={g} open={g === "HTTP"}>
+          <summary><strong>{g}</strong></summary>
+          <ul className="plain help-list">
+            {GROOVY_API.filter((e) => e.group === g).map((e) => (
+              <li key={e.label}>
+                <button className="link-button mono" onClick={() => onInsert(e.label)}>{e.label}</button>
+                <div className="muted small">{e.detail}{e.info ? ` — ${e.info}` : ""}</div>
+              </li>
+            ))}
+          </ul>
+        </details>
+      ))}
+    </Card>
   );
 }

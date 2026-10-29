@@ -20,5 +20,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 include = ["lusopay_worker*"]
 
+# anfitrião dos robôs Groovy (executado pela JVM)
+[tool.setuptools.package-data]
+"lusopay_worker.groovy" = ["*.groovy"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]

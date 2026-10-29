@@ -91,7 +91,7 @@ export function RunDetail() {
         <div>
           <Link to="/runs" className="muted">← Execuções</Link>
           <h1>
-            <Link to={`/bots/${run.bot_key}`}>{run.bot_name}</Link> <StatusBadge status={run.status} />
+            <Link to={`/bots/${run.bot_key}`}>{run.bot_name}</Link> <StatusBadge status={run.status} />{run.dry_run && <span className="badge">simulação (sem efeitos externos)</span>}
           </h1>
           <code className="muted">{run.id}</code>
         </div>

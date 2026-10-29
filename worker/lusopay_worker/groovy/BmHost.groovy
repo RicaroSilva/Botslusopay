@@ -704,7 +704,8 @@ class Seguranca extends SecurityManager {
 
     private static String canonico(String p) {
         try {
-            return java.nio.file.Paths.get(p).toAbsolutePath().normalize().toString()
+            String c = java.nio.file.Paths.get(p).toAbsolutePath().normalize().toString()
+            return File.separatorChar == ('\\' as char) ? c.toLowerCase() : c  // Windows: sem distinção de maiúsculas
         } catch (Exception ignored) {
             return p
         }

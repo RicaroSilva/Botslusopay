@@ -6,7 +6,7 @@ Contentores (rede interna `internal`):
 |---|---|---|
 | `api` | `docker/api.Dockerfile` | aplicação web + API; aplica as migrações no arranque |
 | `scheduler` | mesma imagem (`command: scheduler`) | agendamentos, consultas periódicas, recolha de execuções perdidas (uma só instância ativa) |
-| `runner` | `docker/runner.Dockerfile` | executa os fluxos nativos; pode ser escalado |
+| `runner` | `docker/runner.Dockerfile` | executa os robôs nativos (fluxos e Java/Groovy; inclui o Java 21 e o Groovy); pode ser escalado |
 | `db` | `postgres:16-alpine` | base de dados (substituível por um PostgreSQL externo) |
 
 Testado: build das duas imagens, `docker compose up`, migrações, criação de fluxo, execução manual no runner com

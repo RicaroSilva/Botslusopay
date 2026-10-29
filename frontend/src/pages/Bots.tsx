@@ -6,6 +6,7 @@ import { AvailabilityBadge, ErrorBox, RiskBadge, StatusBadge } from "../componen
 import { fmtDate } from "../format";
 import { useResource } from "../hooks";
 import type { Bot } from "../types";
+import { LANGUAGE_LABEL, NewRobotDialog } from "../components/RobotDialogs";
 import { RunButton } from "./RunDialog";
 
 export function Bots() {
@@ -14,6 +15,7 @@ export function Bots() {
   const [q, setQ] = useState("");
   const [importMsg, setImportMsg] = useState<string | null>(null);
   const [category, setCategory] = useState("");
+  const [choosing, setChoosing] = useState(false);
   const categories = useMemo(() => [...new Set((data ?? []).map((b) => b.category).filter(Boolean))].sort(), [data]);
   const bots = (data ?? []).filter(
     (b) =>
@@ -43,7 +45,7 @@ export function Bots() {
               }} />
             </label>
             <Link className="btn" to="/flows/import-robot">Importar robô (taskt/OpenBots)</Link>
-            <Link className="btn btn-primary" to="/flows/new">+ Novo fluxo</Link>
+            <button className="btn btn-primary" onClick={() => setChoosing(true)}>+ Novo robô</button>
           </div>
         )}
       </div>
@@ -56,6 +58,7 @@ export function Bots() {
           ))}
         </select>
       </div>
+      {choosing && <NewRobotDialog onClose={() => setChoosing(false)} />}
       <ErrorBox error={error} />
       {importMsg && <div className={`alert ${importMsg.startsWith("Erro") ? "alert-error" : "alert-info"}`}>{importMsg}</div>}
       <div className="bot-grid">
@@ -66,13 +69,14 @@ export function Bots() {
               <div className="badges">
                 <AvailabilityBadge value={b.availability} enabled={b.enabled} />
                 <RiskBadge level={b.risk_level} />
+                {b.flow_language && <span className={`badge lang-${b.flow_language}`}>{LANGUAGE_LABEL[b.flow_language]}</span>}
                 {b.requires_approval && <span className="badge">Exige aprovação</span>}
               </div>
             </header>
             <p className="desc">{b.description}</p>
             <dl className="kv compact">
               <div><dt>Categoria</dt><dd>{b.category || "—"}</dd></div>
-              <div><dt>Execução</dt><dd>{b.adapter === "flow" ? <span className="badge avail-available">Fluxo nativo v{b.current_flow_version}</span> : <code>{b.adapter}</code>}</dd></div>
+              <div><dt>Execução</dt><dd>{b.adapter === "flow" ? <span className="badge avail-available">Nativo v{b.current_flow_version}</span> : <code>{b.adapter}</code>}</dd></div>
               <div>
                 <dt>Última execução</dt>
                 <dd>{b.last_run ? <><StatusBadge status={b.last_run.status} /> {fmtDate(b.last_run.created_at)}</> : "—"}</dd>

@@ -10,13 +10,20 @@ COPY frontend/ ./
 RUN npm run build
 
 # 2) backend Python
-FROM python:3.12-slim
+FROM python:3.12-slim-trixie
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1
 RUN useradd --system --uid 10001 --home /app botmanager
+# Java 21 (Eclipse Temurin) para os robôs Groovy: o isolamento usa o SecurityManager, que deixa de existir no Java 24
+COPY --from=eclipse-temurin:21-jre /opt/java/openjdk /opt/java/openjdk
+ENV JAVA_HOME=/opt/java/openjdk
 WORKDIR /app
 COPY backend/pyproject.toml backend/
 COPY backend/botmanager backend/botmanager
 RUN pip install ./backend
+COPY worker/pyproject.toml worker/
+COPY worker/lusopay_worker worker/lusopay_worker
+ENV BM_GROOVY_LIB=/opt/groovy
+RUN pip install ./worker && python -m lusopay_worker.groovy setup
 COPY backend/alembic backend/alembic
 COPY backend/alembic.ini backend/
 COPY bots/registry bots/registry

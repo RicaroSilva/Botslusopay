@@ -62,7 +62,7 @@ export function RunsTable({ runs, showBot = true }: { runs: RunBrief[]; showBot?
           {runs.map((r) => (
             <tr key={r.id}>
               <td>
-                <StatusBadge status={r.status} />
+                <StatusBadge status={r.status} />{r.dry_run && <span className="badge">simulação</span>}
                 {r.needs_review && <span className="badge review" title="Pode ter produzido efeitos externos">Rever</span>}
               </td>
               {showBot && <td>{r.bot_name}</td>}

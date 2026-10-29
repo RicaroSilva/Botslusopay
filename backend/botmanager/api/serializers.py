@@ -19,6 +19,21 @@ def user_out(u: User) -> dict[str, Any]:
     }
 
 
+def _flow_language(bot: Bot) -> str | None:
+    """Formato do robô nativo (flow = passos, groovy = código), lido da versão em uso."""
+    if bot.adapter != "flow" or not bot.current_flow_version:
+        return None
+    from sqlalchemy import select
+    from sqlalchemy.orm import object_session
+
+    from ..models import FlowVersion
+
+    db = object_session(bot)
+    definition = db.scalar(select(FlowVersion.definition).where(FlowVersion.bot_id == bot.id,
+                                                                FlowVersion.version == bot.current_flow_version)) if db else None
+    return (definition or {}).get("language", "flow")
+
+
 def bot_out(bot: Bot, permissions: list[str] | None = None, last_run: Run | None = None, full: bool = False) -> dict[str, Any]:
     defn = bot_definition(bot)
     out: dict[str, Any] = {
@@ -33,6 +48,7 @@ def bot_out(bot: Bot, permissions: list[str] | None = None, last_run: Run | None
         "in_registry": bot.in_registry,
         "source": bot.source,
         "current_flow_version": bot.current_flow_version,
+        "flow_language": _flow_language(bot),
         "requires_approval": defn.requires_approval,
         "triggers_allowed": defn.triggers_allowed,
         "permissions": permissions or [],

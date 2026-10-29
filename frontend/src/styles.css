@@ -163,3 +163,27 @@ ul.plain { list-style: none; padding: 0; margin: 0; } ul.plain li { padding: 5px
 .kv-row { display: flex; gap: 4px; } .kv-row input { flex: 1; min-width: 0; }
 .add-step select { border-style: dashed; color: var(--primary); }
 fieldset label.check.inline { display: inline-flex; margin-right: 12px; }
+
+/* robôs Groovy e escolha do método */
+.code-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+@media (max-width: 1100px) { .code-layout { grid-template-columns: 1fr; } }
+.code-editor { margin: 8px 0; }
+.code-editor .cm-editor { background: #fff; }
+.code-editor .cm-editor.cm-focused { outline: 2px solid #b9d3f0; }
+.lang-flow { background: #e8f0fb; color: #0b5cad; }
+.lang-groovy { background: #efe8fb; color: #5b2fa0; }
+.choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 640px) { .choice-grid { grid-template-columns: 1fr; } }
+.choice { display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 16px; border: 1px solid var(--border);
+  border-radius: 10px; background: #fff; cursor: pointer; font: inherit; color: var(--text); }
+.choice:hover, .choice:focus-visible { border-color: var(--primary); box-shadow: 0 0 0 3px #d7e6f7; }
+.choice-icon { font-size: 22px; font-weight: 700; color: var(--primary); font-family: Consolas, monospace; }
+.modal-wide { width: min(860px, 100%); }
+.link-button { background: none; border: 0; padding: 0; color: var(--primary); cursor: pointer; font: inherit; text-align: left; }
+.link-button:hover { text-decoration: underline; }
+.logs .link-button { color: #8fc1ff; }
+.help-list li { padding: 6px 0; }
+.help-list .link-button { font-size: 12px; white-space: pre-wrap; word-break: break-word; }
+details { margin: 4px 0; } details summary { cursor: pointer; padding: 4px 0; }
+.report-list li { font-size: 13px; }
+.test-console { border-color: #b9d3f0; }
