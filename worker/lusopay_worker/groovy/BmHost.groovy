@@ -945,6 +945,7 @@ Binding b = script.binding
 ((Map) (init.variables ?: [:])).each { k, v -> b.setVariable((String) k, v) }
 b.setVariable("params", init.params ?: [:])
 b.setVariable("run_id", init.run_id)
+b.setVariable("simulacao", init.dry_run == true)  // teste sem efeitos externos
 b.setVariable("http", new Http())
 b.setVariable("email", new Email())
 b.setVariable("sql", new Sql())

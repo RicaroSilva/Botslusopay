@@ -437,6 +437,7 @@ class Engine:
         ctx: dict[str, Any] = copy.deepcopy(self.flow.get("variables", {}))
         ctx["params"] = self.job.get("parameters") or {}
         ctx["run_id"] = self.job.get("run_id")
+        ctx["simulacao"] = self.dry_run  # True num teste: POST/PUT/DELETE, emails e escritas SQL não são feitos
         ctx["files"] = self.files
         started = time.monotonic()
         result: dict[str, Any] = {"status": "SUCCEEDED"}
@@ -466,9 +467,9 @@ class Engine:
         rt = self.job.get("groovy") or {}
         if not rt.get("argv"):
             raise FlowError("groovy", "o worker não tem o Groovy instalado")
-        variables = {k: v for k, v in ctx.items() if k not in ("files", "params", "run_id")}
+        variables = {k: v for k, v in ctx.items() if k not in ("files", "params", "run_id", "simulacao")}
         init = {"code": self.flow.get("code", ""), "variables": variables, "params": ctx["params"],
-                "run_id": ctx["run_id"], "out_dir": str(self.out_dir)}
+                "run_id": ctx["run_id"], "out_dir": str(self.out_dir), "dry_run": self.dry_run}
         proc = subprocess.Popen(rt["argv"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                 cwd=str(self.out_dir), env=rt.get("env"), bufsize=0)
         assert proc.stdin and proc.stdout and proc.stderr

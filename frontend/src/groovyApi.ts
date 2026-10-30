@@ -31,6 +31,7 @@ export const GROOVY_API: ApiEntry[] = [
   { group: "Registo e controlo", label: 'terminar("motivo")', detail: "termina com sucesso", info: "Não é apanhado por try/catch." },
   { group: "Registo e controlo", label: "paralelo(lista, 10) { item ->\n    \n}", detail: "repete em paralelo", info: "Corre o bloco para cada elemento, até N em simultâneo (útil para muitos pedidos à API)." },
   { group: "Dados", label: "params", detail: "parâmetros da execução", info: "Mapa com os parâmetros. As variáveis do robô estão disponíveis diretamente pelo nome; run_id identifica a execução." },
+  { group: "Dados", label: "simulacao", detail: "true num teste", info: "true em ▶ Testar (simulação): os POST/PUT/DELETE devolvem uma resposta vazia, os emails e as escritas SQL não são feitos. Use, por exemplo, if (!simulacao) para validar a resposta de um POST." },
   { group: "Funções", label: "text(valor)", detail: "→ texto", info: "Listas e mapas passam a JSON; null passa a \"\"." },
   { group: "Funções", label: "num(valor)", detail: "→ número", info: "Aceita 1234.56 e o formato português 1.234,56." },
   { group: "Funções", label: "money(valor)", detail: "→ \"1234,50\"", info: "Duas casas decimais com vírgula." },

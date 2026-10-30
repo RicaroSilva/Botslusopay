@@ -95,8 +95,9 @@ http.post("https://dev.lusopay.com:8444/api/x", [a: 1], credencial: "cyclos-dev"
 email.enviar(credencial: "smtp-x", para: "a@b.pt", assunto: "s", corpo: "c")
 log "fim"
 """
-    res, calls, logs = run(tmp_path, code, dry_run=True)
+    res, calls, logs = run(tmp_path, code + 'log "simulacao=${simulacao}"\n', dry_run=True)
     assert res["status"] == "SUCCEEDED" and calls == [] and SMTP.sent == []
+    assert "simulacao=true" in logs
     assert any("[SIMULAÇÃO] POST" in line for line in logs) and any("[SIMULAÇÃO] email" in line for line in logs)
 
 

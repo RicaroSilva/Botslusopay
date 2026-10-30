@@ -57,6 +57,8 @@ terminar("motivo")    // termina com sucesso; não é apanhado por try/catch
 paralelo(lista, 10) { item -> http.get("…/${item.id}", credencial: "…") }   // até 10 em simultâneo
 
 // Dados: params (parâmetros da execução), run_id e as variáveis do robô pelo nome
+// simulacao: true em "▶ Testar (simulação)" — os POST/PUT/DELETE devolvem resposta vazia, por isso
+//            não valide a resposta de um POST quando simulacao é true
 ```
 
 Funções auxiliares (iguais aos filtros dos fluxos, para as conversões darem o mesmo resultado): `text`, `num`
