@@ -1,0 +1,35 @@
+key: reenviar-callbacks-5a1h
+name: "Reenviar callbacks falhados (5 a 1 horas antes)"
+description: >
+  Lê os logs \\REALTIME\logs\<data>.txt, identifica notificações de callback
+  falhadas e volta a chamar o URL de callback dos comerciantes, exceto os sites
+  listados em "Sites excluidos do bot de callback.txt". Envia email por cada
+  reenvio e grava relatório em taskt\Relatórios.
+category: Pagamentos
+risk_level: high
+source_file: "Reenviar notificações de callback falhadas 5 a 1 horas antes.xml"
+execution:
+  adapter: taskt_cli
+  script: "Reenviar notificações de callback falhadas 5 a 1 horas antes.xml"
+  validated: false
+prerequisites:
+  - "Acesso à partilha \\\\REALTIME\\logs"
+  - "Ficheiro 'Sites excluidos do bot de callback.txt' atualizado (ver comentário MUITO IMPORTANTE no XML)"
+external_effects:
+  - "CHAMA URLs de callback de comerciantes (pode gerar faturação/efeitos nos sistemas deles)"
+  - "Envio de emails"
+known_limitations:
+  - "Credenciais SMTP escritas no XML"
+  - "Não repetir sem verificar o relatório da execução anterior: callbacks já reenviados seriam duplicados"
+concurrency:
+  policy: single
+  exclusive_resources: [taskt-desktop, callbacks]
+timeout_seconds: 3600
+success_detection:
+  method: taskt_log
+triggers_allowed: [manual, schedule]
+requires_approval: true
+permissions:
+  view: [viewer, operator, approver]
+  execute: [operator]
+  approve: [approver]

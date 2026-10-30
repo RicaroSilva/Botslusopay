@@ -1,0 +1,30 @@
+key: analise-listas-pep-api
+name: "Análise de listas PEP por API"
+description: >
+  Descarrega a lista PEP (services.lusopay.com/PEP.csv), compara com nomes de
+  clientes, gerentes e beneficiários efetivos, gera relatório e envia por
+  email. No orquestrador atual corre nos dias 1, 8, 15, 22 e 29.
+category: Compliance
+risk_level: medium
+source_file: "OK Análise Listas PEP por API.xml"
+execution:
+  adapter: taskt_cli
+  script: "OK Análise Listas PEP por API.xml"
+  validated: false
+prerequisites:
+  - "Listas de clientes/gerentes/beneficiários geradas pelo projeto OpenBots 'diligência reforçada BdP' (lidas de Documents\\OpenBotsStudio\\My Scripts\\...\\Listas)"
+  - "Config.txt com credenciais SMTP"
+external_effects:
+  - "Download de services.lusopay.com/PEP.csv"
+  - "Envio de email com relatório PEP"
+concurrency:
+  policy: single
+  exclusive_resources: [taskt-desktop]
+timeout_seconds: 10800
+success_detection:
+  method: taskt_log
+triggers_allowed: [manual, schedule, after_bot]
+requires_approval: false
+permissions:
+  view: [viewer, operator, approver]
+  execute: [operator]

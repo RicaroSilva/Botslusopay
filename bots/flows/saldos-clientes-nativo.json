@@ -1,0 +1,44 @@
+{
+  "key": "saldos-clientes-nativo",
+  "name": "Saldos de clientes no Cyclos (fluxo nativo)",
+  "category": "Contabilidade",
+  "risk_level": "medium",
+  "timeout_seconds": 7200,
+  "triggers_allowed": ["manual", "schedule"],
+  "description": "Recolhe os saldos de todos os clientes no Cyclos, gera um CSV (Nome do cliente;Saldo) e envia-o por email. Substitui o bot taskt 'OK Saldos de clientes no Cyclos no final do mês'.",
+  "external_effects": ["GET à API Cyclos produtiva (1 pedido por cliente, 10 em paralelo)", "Email com o CSV de saldos"],
+  "prerequisites": ["Credencial 'cyclos-producao' (API Basic)", "Credencial 'smtp-lusopay' (SMTP)"],
+  "source_bot": "OK Saldos de clientes no Cyclos no final do mês.xml",
+  "migration_notes": [
+    "Destinatários originais: jar@lusopay.com, geral@lusopay.com. Para testar, a variável 'destinatarios' vem com ricardosilva@lusopay.com: alterar antes de pôr em produção.",
+    "O bot original pedia o nome de cada cliente em sequência (~2 s/cliente, ~3,5 h para 6000). Aqui são feitos 10 pedidos em simultâneo.",
+    "A ordem das linhas é a devolvida pela API, como no original."
+  ],
+  "definition": {
+    "description": "Saldos de clientes por API → CSV → email",
+    "variables": {"destinatarios": "ricardosilva@lusopay.com", "paralelo": 10},
+    "steps": [
+      {"id": "hoje", "type": "set", "variable": "hoje", "value": "{{ now() | date('%Y-%m-%d') }}"},
+      {"id": "saldos", "name": "Recolhe saldos e Cyclos ID dos clientes", "type": "http_request", "method": "GET",
+       "url": "https://app.lusopay.com:8443/web/api/accounts/EUR/user-balances", "query": {"pageSize": "99999"},
+       "headers": {"accept": "application/json"}, "credential": "cyclos-producao", "save_as": "saldos",
+       "timeout_seconds": 300, "retries": 2},
+      {"id": "linhas", "type": "set", "variable": "linhas", "expr": "[]"},
+      {"id": "clientes", "name": "Recolhe o nome de cada cliente", "type": "foreach", "items_expr": "saldos",
+       "item_variable": "s", "parallel": 10, "steps": [
+         {"id": "nome", "type": "http_request", "method": "GET",
+          "url": "https://app.lusopay.com:8443/web/api/users/{{ s.id }}", "query": {"fields": "name"},
+          "headers": {"accept": "application/json"}, "credential": "cyclos-producao", "save_as": "cliente", "retries": 2},
+         {"id": "junta", "type": "append", "variable": "linhas",
+          "expr": "{'ordem': loop_index, 'nome': cliente.name, 'saldo': s.balance}"}
+       ]},
+      {"id": "csv", "name": "Cria CSV com saldos", "type": "csv_write", "file": "Saldos de clientes a {{ hoje }}.csv",
+       "rows_expr": "linhas | sort(attribute='ordem')",
+       "columns": [{"header": "Nome do cliente", "value": "{{ row.nome }}"}, {"header": "Saldo", "value": "{{ row.saldo }}"}]},
+      {"id": "email", "name": "Envio de email para administração", "type": "email", "credential": "smtp-lusopay",
+       "to": ["{{ destinatarios }}"], "subject": "Saldos de clientes no Cyclos a {{ hoje }}",
+       "body": "Olá,\n\nEm anexo, segue ficheiro com saldos detalhados de cada cliente LUSOPAY na data de {{ hoje }}.\nA contabilidade devera considerar, ainda, a existência na conta dinheiro de clientes (existente no banco) de pagamentos por identificar (referências não geradas previamente, ou seja, não atribuídas a nenhum dos nossos clientes e pagas por erro do pagador na inserção da referência), transferências de clientes para a conta de clientes, mas sem identificação ou com identificação insuficiente, comissões da LUSOPAY já abatidas neste ficheiro, mas que só serão retiradas da conta bancária no dia útil seguinte. Poderá, ainda, existir algum pagamento por referência multibanco de ficheiro já carregado no cyclos, mas não existente na conta bancária.\n\nIMPORTANTE: Temos de juntar ficheiro excel com as transferências e referências por identificar.\nCumprimentos,\n\nRobô da LUSOPAY",
+       "attachments": ["Saldos de clientes a {{ hoje }}.csv"]}
+    ]
+  }
+}

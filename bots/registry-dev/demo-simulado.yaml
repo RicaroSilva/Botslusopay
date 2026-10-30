@@ -1,0 +1,21 @@
+# APENAS DESENVOLVIMENTO: bot simulado para testar o Bot Manager sem OpenBots/taskt.
+# Um resultado com sucesso deste bot NÃO prova que algum bot real funciona.
+key: demo-simulado
+name: "[SIMULADO] Bot de demonstração"
+description: "Adaptador simulado: escreve linhas de log e termina com o resultado pedido."
+category: Desenvolvimento
+risk_level: low
+execution:
+  adapter: simulated
+  script: "demo"
+  validated: true
+concurrency:
+  policy: single
+  exclusive_resources: [sim-desktop]
+timeout_seconds: 60
+success_detection:
+  method: simulated
+triggers_allowed: [manual, schedule, webhook, after_bot]
+permissions:
+  view: [viewer, operator, approver]
+  execute: [operator]

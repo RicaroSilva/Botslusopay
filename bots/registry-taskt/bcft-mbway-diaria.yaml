@@ -1,0 +1,35 @@
+key: bcft-mbway-diaria
+name: "Análise BCFT MB Way (diária)"
+description: >
+  Consulta a base de dados MB Way (SQL Server), identifica pagamentos
+  suspeitos entre pagador e beneficiário, envia relatório por email e regista
+  transações analisadas no Cyclos (POST system/records/TransacoesAnalisadas).
+category: Compliance
+risk_level: high
+source_file: "OK LUSOPAY Análise BCFT MB Way pagamentos entre pagador e beneficiário.xml"
+execution:
+  adapter: taskt_cli
+  script: "OK LUSOPAY Análise BCFT MB Way pagamentos entre pagador e beneficiário.xml"
+  validated: false
+prerequisites:
+  - "Acesso à base de dados SQL Server (connection string no XML)"
+  - "Config.txt com credenciais API e SMTP"
+external_effects:
+  - "ESCREVE registos no Cyclos produtivo (POST TransacoesAnalisadas)"
+  - "Envio de email com transações suspeitas"
+known_limitations:
+  - "Contém 'Prompt for Input' (pede data de início): pode bloquear em execução não assistida até ao timeout"
+  - "Usa 'Stop Current Task' como fim normal quando não há ficheiros (o taskt reporta Cancelled)"
+concurrency:
+  policy: single
+  exclusive_resources: [taskt-desktop]
+timeout_seconds: 7200
+success_detection:
+  method: taskt_log
+  taskt_cancelled_is_success: true
+triggers_allowed: [manual]
+requires_approval: true
+permissions:
+  view: [viewer, operator, approver]
+  execute: [operator]
+  approve: [approver]

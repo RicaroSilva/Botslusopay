@@ -1,0 +1,25 @@
+key: diligencia-reforcada-bdp-openbots
+name: "Diligência reforçada BdP vs clientes (OpenBots)"
+description: >
+  Projeto OpenBots Studio chamado pelo orquestrador diário
+  (project.obconfig). Gera as listas de clientes, gerentes e beneficiários
+  efetivos usadas pela análise PEP. O projeto NÃO está no repositório.
+category: Compliance
+risk_level: medium
+source_file: "OK Análise de lista de entidades sujeitas a diligência reforçada por ordem do BdP e clientes Lusopay por API/project.obconfig"
+execution:
+  adapter: openbots_studio
+  script: "OK Análise de lista de entidades sujeitas a diligência reforçada por ordem do BdP e clientes Lusopay por API/project.obconfig"
+  validated: false
+known_limitations:
+  - "Mecanismo de execução OpenBots por linha de comandos por confirmar; o adaptador recusa executar até ser validado"
+concurrency:
+  policy: single
+  exclusive_resources: [taskt-desktop]
+timeout_seconds: 10800
+success_detection:
+  method: exit_code
+triggers_allowed: [manual]
+permissions:
+  view: [viewer, operator, approver]
+  execute: [operator]

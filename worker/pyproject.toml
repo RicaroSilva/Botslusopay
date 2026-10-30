@@ -1,0 +1,28 @@
+[project]
+name = "lusopay-worker"
+version = "0.1.0"
+description = "LUSOPAY Bot Manager - worker (fluxos nativos e, no Windows, bots taskt/OpenBots)"
+requires-python = ">=3.11"
+dependencies = ["httpx>=0.27", "jinja2>=3.1"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+# necessário apenas para passos sql_query (SQL Server)
+sql = ["pymssql>=2.3"]
+
+[project.scripts]
+lusopay-worker = "lusopay_worker.main:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["lusopay_worker*"]
+
+# anfitrião dos robôs Groovy (executado pela JVM)
+[tool.setuptools.package-data]
+"lusopay_worker.groovy" = ["*.groovy"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
