@@ -487,3 +487,17 @@ def test_openbots_parse_json_model_then_get_list_item(tmp_path):
                      "allowed_hosts": []}, tmp_path, emit=lambda line: None).run()
     assert result["status"] == "SUCCEEDED", result
     assert (tmp_path / "nomes.txt").read_text(encoding="utf-8") == "Nomes\nAna\nRui"
+
+
+def test_taskt_input_variable_without_braces():
+    """No taskt, Replace/Split/Modify aceitam o nome da variável sem chavetas ("vPep" = variável vPep)."""
+    xml = script(
+        cmd("VariableCommand", 1, v_userVariableName="vPep", v_Input="Ana, Rui"),
+        cmd("StringReplaceCommand", 2, v_userVariableName="vPep", v_replacementText=",", v_replacementValue=";",
+            v_applyToVariableName="vPep"),
+        cmd("ModifyVariableCommand", 3, v_userVariableName="vPep", v_ConvertType="To Upper Case", v_applyToVariableName="vPep"),
+        cmd("StringSplitCommand", 4, v_userVariableName="vPep", v_splitCharacter=";", v_applyConvertToUserVariableName="vLista"),
+        variables=("vPep", "vLista"))
+    steps = convert(read_robot(xml, "pep.xml")).definition["steps"]
+    exprs = " ".join(s.get("expr", "") for s in steps)
+    assert "'vPep'" not in exprs and "(vPep)" in exprs

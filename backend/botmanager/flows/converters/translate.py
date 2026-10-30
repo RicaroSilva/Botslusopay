@@ -196,6 +196,14 @@ class Translator:
 
     _TOKEN = re.compile(r"\{([A-Za-z_][\w\-]*(?:\.[A-Za-z_]+){0,2})\}|\[(v[\w\-]*)\]")
 
+    def src(self, raw: str) -> str:
+        """Expressão de um campo "variável de entrada": no taskt, Replace/Split/Modify/Substring aceitam o nome da
+        variável sem chavetas (ex.: "vPep"), que deve ser lido como variável e não como o texto "vPep"."""
+        name = (raw or "").strip()
+        if re.fullmatch(r"[A-Za-z_][\w\-]*", name) and self._known(name):
+            return self.expr("{" + name + "}")
+        return self.expr(raw)
+
     def _known(self, name: str) -> bool:
         return self.var(name) in self.declared or self.var(name) in self.referenced
 
@@ -652,7 +660,7 @@ class Translator:
 
     def c_StringReplaceCommand(self, c):
         out = self._out(c, "v_applyToVariableName", "v_userVariableName")
-        src = self.expr(c.attrs.get("v_userVariableName", ""))
+        src = self.src(c.attrs.get("v_userVariableName", ""))
         find = self.expr(c.attrs.get("v_replacementText", ""))
         repl = self.expr(c.attrs.get("v_replacementValue", ""))
         return self._set_expr(c, out, f"(({src}) | text).replace(({find}) | text, ({repl}) | text)", "Substituir texto")
@@ -660,7 +668,7 @@ class Translator:
     def c_StringSplitCommand(self, c):
         out = self._out(c, "v_applyConvertToUserVariableName", "v_applyToVariableName")
         sep = c.attrs.get("v_splitCharacter", ",")
-        return self._set_expr(c, out, f"({self.expr(c.attrs.get('v_userVariableName', ''))}) | split_text({self.expr(sep)})",
+        return self._set_expr(c, out, f"({self.src(c.attrs.get('v_userVariableName', ''))}) | split_text({self.expr(sep)})",
                               "Dividir texto")
 
     def c_TextExtractorCommand(self, c):
@@ -682,7 +690,7 @@ class Translator:
 
     def c_ModifyVariableCommand(self, c):
         out = self._out(c, "v_applyToVariableName", "v_userVariableName")
-        src = f"(({self.expr(c.attrs.get('v_userVariableName', ''))}) | text)"
+        src = f"(({self.src(c.attrs.get('v_userVariableName', ''))}) | text)"
         conv = (c.attrs.get("v_ConvertType") or "").lower()
         e = {"to upper case": f"{src}.upper()", "to lower case": f"{src}.lower()",
              "to base64 string": None}.get(conv, f"{src}.strip()" if "trim" in conv else None)
@@ -698,7 +706,7 @@ class Translator:
 
     def c_StringSubstringCommand(self, c):
         out = self._out(c, "v_applyToVariableName", "v_userVariableName")
-        src = f"(({self.expr(c.attrs.get('v_userVariableName', ''))}) | text)"
+        src = f"(({self.src(c.attrs.get('v_userVariableName', ''))}) | text)"
         start = self.num_expr(c.attrs.get("v_startIndex", "0") or "0")
         length = c.attrs.get("v_stringLength", "")
         e = f"{src}[{start}:]" if length in ("", "-1") else f"{src}[{start}:{start} + {self.num_expr(length)}]"
