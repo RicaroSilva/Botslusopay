@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import csv
 import json
+import mimetypes
 import random
 import re
 import smtplib
@@ -40,6 +41,7 @@ RESULT_PREFIX = "@@RESULT "
 EMAIL_RE = re.compile(r"^[^@\s,;<>]+@[^@\s,;<>]+\.[A-Za-z]{2,}$")
 CSV_FORMULA_PREFIX = ("=", "+", "-", "@", "\t", "\r")
 MAX_RESPONSE_BYTES = 50 * 1024 * 1024
+MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 
 
 class FlowError(Exception):
@@ -560,6 +562,12 @@ class Engine:
                 headers.setdefault("Content-Type", "application/json")
             elif "text" in body:
                 content = body["text"]
+            upload = form = None
+            if a.get("ficheiro"):
+                upload = (to_text(a.get("campo") or "file"), to_text(a["ficheiro"]))
+                if "json" in body and isinstance(body["json"], dict):  # campos de formulário que acompanham o ficheiro
+                    form, content = {str(k): to_text(v) for k, v in body["json"].items()}, None
+                    headers.pop("Content-Type", None)
             expect = a.get("esperar") or [200, 201, 202, 204]
             if not isinstance(expect, list):
                 expect = [expect]
@@ -567,7 +575,8 @@ class Engine:
                 sid, a.get("method", "GET"), str(a["url"]), headers,
                 {str(k): to_text(v) for k, v in (a.get("query") or {}).items()}, content, a.get("credencial"),
                 float(a.get("timeout") or 60), int(a.get("tentativas") or 2),
-                [int(x) for x in expect], {"texto": "text", "json": "json"}.get(a.get("resposta"), "auto"))
+                [int(x) for x in expect], {"texto": "text", "json": "json"}.get(a.get("resposta"), "auto"),
+                upload, form)
             return value
         if op == "email":
             def lst(v):
@@ -733,18 +742,25 @@ class Engine:
             headers.setdefault("Content-Type", "application/json")
         elif s.get("body_text") is not None:
             content = self.render(s["body_text"], ctx)
+        upload = None
+        if s.get("upload_file"):
+            upload = (s.get("upload_field") or "file", self.render(s["upload_file"], ctx))
         status, body = self.http_call(s["id"], s.get("method", "GET"), url, headers, params, content,
                                       s.get("credential"), s.get("timeout_seconds", 30), int(s.get("retries", 0)),
-                                      s.get("expect_status") or [200], s.get("response", "json"))
+                                      s.get("expect_status") or [200], s.get("response", "json"), upload)
         if s.get("save_as"):
             ctx[s["save_as"]] = body
             ctx[f"{s['save_as']}_status"] = status
 
     def http_call(self, sid: str, method: str, url: str, headers: dict[str, str], params: dict[str, str],
                   content: str | bytes | None, credential: str | None, timeout: float, retries: int,
-                  expect: list[int], response: str) -> tuple[int, Any]:
+                  expect: list[int], response: str, upload: tuple[str, str] | None = None,
+                  form: dict[str, str] | None = None) -> tuple[int, Any]:
         """Pedido HTTP com as regras dos fluxos: só https, hosts autorizados, credencial do cofre, repetição só em
-        GET/HEAD. Usado pelos passos e pelos robôs Groovy."""
+        GET/HEAD. Usado pelos passos e pelos robôs Groovy.
+
+        upload = (campo, ficheiro): envia um ficheiro desta execução em multipart/form-data (ex.: POST /files/temp do
+        Cyclos), com os campos de formulário opcionais em form."""
         method = method.upper()
         parts = urlsplit(url)
         if parts.scheme != "https":
@@ -763,14 +779,32 @@ class Engine:
                 headers[c["header_name"]] = c["value"]
         if params:  # junta aos parâmetros que já estejam no URL (ex.: fields=a&fields=b), sem os substituir
             url = str(httpx.URL(url).copy_merge_params(params))
+        upload_data: bytes | None = None
+        if upload:
+            if method not in ("POST", "PUT", "PATCH"):
+                raise ValueError("só é possível enviar um ficheiro com POST, PUT ou PATCH")
+            if content is not None:
+                raise ValueError("envie um ficheiro OU um corpo, não os dois")
+            path = self._out_path(upload[1])
+            if not path.is_file():
+                raise ValueError(f"ficheiro a enviar não existe nesta execução: {upload[1]}")
+            upload_data = path.read_bytes()
+            if len(upload_data) > MAX_UPLOAD_BYTES:
+                raise ValueError(f"ficheiro a enviar demasiado grande: {upload[1]}")
         if self.dry_run and method not in ("GET", "HEAD"):
-            size = len(content or "")
+            size = f"ficheiro {upload[1]} com {len(upload_data or b'')} bytes" if upload else \
+                f"corpo com {len(content or '')} caracteres"
             self.log(f"[{sid}] [SIMULAÇÃO] {method} {parts.scheme}://{parts.netloc}{parts.path} não enviado "
-                     f"(corpo com {size} caracteres)", "WARNING")
+                     f"({size})", "WARNING")
             return 0, ({} if response == "json" else "")
         kwargs: dict[str, Any] = {"headers": headers, "auth": auth, "timeout": timeout}
         if content is not None:
             kwargs["content"] = content
+        if upload:
+            ctype = mimetypes.guess_type(upload[1])[0] or "application/octet-stream"
+            kwargs["files"] = {upload[0]: (upload[1], upload_data, ctype)}
+            if form:
+                kwargs["data"] = form
         attempts = 1 + (retries if method in ("GET", "HEAD") else 0)
         for attempt in range(1, attempts + 1):
             t0 = time.monotonic()

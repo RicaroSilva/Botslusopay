@@ -35,6 +35,13 @@ def clientes = http.get("https://app.lusopay.com:8443/web/api/users", credencial
 def id = http.post("https://app.lusopay.com:8443/web/api/x", [campo: "valor"], credencial: "cyclos-producao")
 // também http.put, http.patch, http.delete; o corpo é JSON (mapa/lista) ou texto (String)
 
+// Enviar um ficheiro desta execução (multipart/form-data, campo "file"; outro nome com campo: "...").
+// No Cyclos: POST /files/temp devolve o id do ficheiro temporário, que depois é o valor de um campo do tipo ficheiro.
+def idFicheiro = http.post("https://app.lusopay.com:8443/web/api/files/temp", credencial: "cyclos-producao",
+                           ficheiro: "relatorio.txt", resposta: "texto")
+http.post("https://app.lusopay.com:8443/web/api/system/records/Relatorios",
+          [customValues: [Ficheiro: idFicheiro]], credencial: "cyclos-producao")
+
 // Email (anexos: ficheiros criados por este robô)
 email.enviar(credencial: "smtp-lusopay", para: ["a@lusopay.com"], cc: "b@lusopay.com",
              assunto: "Relatório", corpo: "Em anexo.", anexos: ["relatorio.csv"])

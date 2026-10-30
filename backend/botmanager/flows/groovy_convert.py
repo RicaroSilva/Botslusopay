@@ -511,6 +511,10 @@ class FlowToGroovy:
         timeout = s.get("timeout_seconds", 30)
         if timeout not in (30, 60):
             opts.append(f"timeout: {timeout}")
+        if s.get("upload_file"):
+            opts.append(f"ficheiro: {self.T(sid, s['upload_file'])}")
+            if (s.get("upload_field") or "file") != "file":
+                opts.append(f"campo: {gstr(s['upload_field'])}")
         args = [self.T(sid, s["url"])]
         if method in ("post", "put", "patch"):
             if s.get("body_json_expr"):
@@ -887,8 +891,14 @@ class GroovyToFlow:
                     step["retries"] = int(self.const_str_num(val))
                 elif key == "timeout":
                     step["timeout_seconds"] = int(self.const_str_num(val))
+                elif key == "ficheiro":
+                    step["upload_file"] = self.T(val)
+                elif key == "campo":
+                    step["upload_field"] = self.const_str(val, "o nome do campo")
                 else:
                     raise Untranslatable(f"opção http '{key}'")
+            if "ficheiro" in named and len(pos) > 1:
+                raise Untranslatable("http com ficheiro e corpo (campos de formulário) não tem equivalente no fluxo")
             if len(pos) > 1:
                 body = pos[1]
                 text_fns = {"text", "date", "money", "decimal", "tojson", "regex", "regex_replace", "between", "after", "before"}

@@ -14,6 +14,8 @@ export const GROOVY_API: ApiEntry[] = [
     info: "Pedido GET. Opções: credencial, headers: [nome: valor], query: [nome: valor], esperar: [200], resposta: 'texto', timeout: 60, tentativas: 2. Só https; repete até 2 vezes em caso de falha de rede." },
   { group: "HTTP", label: 'http.post("https://…", [campo: valor], credencial: "cyclos-producao")', detail: "→ resposta",
     info: "POST com corpo JSON (mapa ou lista) ou texto (String). Nunca é repetido automaticamente. Também http.put, http.patch e http.delete." },
+  { group: "HTTP", label: 'http.post("https://…/files/temp", credencial: "cyclos-producao", ficheiro: "relatorio.txt", resposta: "texto")', detail: "→ envia um ficheiro",
+    info: "Envia um ficheiro criado nesta execução em multipart/form-data (campo \"file\"; outro nome com campo: \"…\"). Um mapa como corpo vai como campos do formulário. No Cyclos, /files/temp devolve o id a usar num campo personalizado do tipo ficheiro." },
   { group: "Email", label: 'email.enviar(credencial: "smtp-lusopay", para: ["a@lusopay.com"], assunto: "…", corpo: "…")', detail: "envia email",
     info: "Opções: para, cc (texto ou lista; aceita vários endereços separados por ; ou ,), assunto, corpo, anexos: [\"ficheiro.csv\"] (ficheiros criados por este robô)." },
   { group: "SQL Server", label: 'sql.consultar("sql-magnimeios", "select … where id > :ultimo", [ultimo: 10])', detail: "→ lista de linhas (mapas)",

@@ -26,7 +26,7 @@ agendamentos e outras regras, dependências, histórico, logs e auditoria.
 
 | Passo | Para quê |
 |---|---|
-| Pedido à API (HTTP) | GET/POST/PUT/PATCH/DELETE por **https**; autenticação pela credencial; resposta JSON ou texto guardada numa variável; `retries` só em GET/HEAD |
+| Pedido à API (HTTP) | GET/POST/PUT/PATCH/DELETE por **https**; autenticação pela credencial; resposta JSON ou texto guardada numa variável; `retries` só em GET/HEAD; **Enviar ficheiro** (`upload_file`) manda um ficheiro da execução em multipart/form-data (ex.: `POST /files/temp` do Cyclos) |
 | Definir variável | texto com modelo (`value`) ou expressão (`expr`) |
 | Extrair de JSON | caminho simples: `items[*].id`, `a.b[0].c` |
 | Para cada elemento | repete passos para cada item de uma lista; opcionalmente em paralelo |

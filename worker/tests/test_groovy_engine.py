@@ -211,3 +211,28 @@ def test_helpers_match_flow_engine(tmp_path):
     for k, (_, jinja) in cases.items():
         expected = env.from_string("{{ " + jinja + " }}").render()
         assert groovy[k] == expected, (k, groovy[k], expected)
+
+
+def test_upload_file_to_cyclos_temp(tmp_path):
+    seen = []
+
+    def api(r):
+        seen.append((r.method, str(r.url), r.headers["content-type"], r.content))
+        return httpx.Response(201, text="-555")
+
+    code = """
+ficheiro.gravar("relatorio.txt", "linha 1")
+def id = http.post("https://dev.lusopay.com:8444/api/files/temp", credencial: "cyclos-dev", ficheiro: "relatorio.txt", resposta: "texto")
+http.post("https://dev.lusopay.com:8444/api/x", [descricao: "teste"], credencial: "cyclos-dev", ficheiro: "relatorio.txt", campo: "anexo")
+log "id=${id}"
+"""
+    res, _, logs = run(tmp_path, code, api=api)
+    assert res["status"] == "SUCCEEDED", (res, logs)
+    assert "id=-555" in logs
+    assert seen[0][2].startswith("multipart/form-data") and b'name="file"; filename="relatorio.txt"' in seen[0][3]
+    assert b"linha 1" in seen[0][3]
+    assert b'name="anexo"' in seen[1][3] and b'name="descricao"' in seen[1][3] and b"teste" in seen[1][3]
+    # simulação: nada é enviado
+    seen.clear()
+    res, _, logs = run(tmp_path, code, api=api, dry_run=True)
+    assert res["status"] == "SUCCEEDED" and seen == [] and any("ficheiro relatorio.txt" in line for line in logs)

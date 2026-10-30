@@ -152,3 +152,25 @@ def test_dry_run_allowed_on_disabled_flow_without_approval(env, clients):
     wc = worker_client(env["app"])
     job = wc.post("/api/worker/claim", json={}).json()
     assert job["dry_run"] is True
+
+
+@needs_groovy
+def test_upload_file_converts_both_ways(clients):
+    a = clients["admin"]
+    flow = {"steps": [
+        {"id": "f", "type": "text_write", "file": "r.txt", "content": "x"},
+        {"id": "up", "type": "http_request", "method": "POST", "url": "https://dev.lusopay.com:8444/api/files/temp",
+         "credential": "cyclos-dev", "upload_file": "r.txt", "response": "text", "expect_status": [201], "save_as": "id"}]}
+    r = a.post("/api/flows/transform", json={"definition": flow, "target": "groovy"}).json()
+    assert r["complete"], r
+    assert "ficheiro: 'r.txt'" in r["definition"]["code"]
+    back = a.post("/api/flows/transform", json={"definition": r["definition"], "target": "flow"}).json()
+    up = back["definition"]["steps"][-1]
+    assert up["upload_file"] == "r.txt" and up["method"] == "POST" and "body_text" not in up
+    # ficheiro e corpo ao mesmo tempo, ou com GET: inválido
+    bad = dict(flow["steps"][1], body_text="x")
+    r = a.post("/api/flows/validate", json={"definition": {"steps": [bad]}}).json()
+    assert not r["valid"] and "ficheiro OU um corpo" in str(r)
+    get = dict(flow["steps"][1], method="GET")
+    r = a.post("/api/flows/validate", json={"definition": {"steps": [get]}}).json()
+    assert not r["valid"] and "POST, PUT ou PATCH" in r["error"]

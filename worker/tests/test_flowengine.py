@@ -337,3 +337,26 @@ def test_taskt_compat_steps_and_filters(tmp_path):
     assert c["ontem"] == "2026-02-28" and c["mes"] == "2026-02-28"
     assert c["o"] == '{"x": 1}'  # objetos aparecem em texto como JSON
     assert c["soma"] == 1235.5
+
+
+def test_upload_file_multipart(tmp_path):
+    """Envio de um ficheiro da execução (ex.: POST /files/temp do Cyclos, que devolve o id do ficheiro)."""
+    seen = {}
+
+    def h(req):
+        seen["ct"] = req.headers["content-type"]
+        seen["body"] = req.content
+        return httpx.Response(201, text="-123")
+
+    (tmp_path / "relatório.txt").write_text("conteúdo", encoding="utf-8")
+    step = {"id": "up", "type": "http_request", "method": "POST", "url": "https://api.exemplo.pt/files/temp",
+            "upload_file": "{{ params.nome }}", "expect_status": [201], "response": "text", "save_as": "id"}
+    eng, _, _ = make_engine(tmp_path, [step], handler=h, params={"nome": "relatório.txt"})
+    assert eng.run()["status"] == "SUCCEEDED"
+    assert seen["ct"].startswith("multipart/form-data; boundary=")
+    assert b'name="file"' in seen["body"] and "conteúdo".encode() in seen["body"] and b"text/plain" in seen["body"]
+
+    missing = dict(step, upload_file="nao-existe.txt")
+    eng, _, _ = make_engine(tmp_path, [missing], handler=h)
+    res = eng.run()
+    assert res["status"] == "FAILED" and "não existe" in res["error"]

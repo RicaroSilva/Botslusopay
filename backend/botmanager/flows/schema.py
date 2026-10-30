@@ -69,6 +69,9 @@ class HttpRequestStep(_Step):
     query: dict[str, str] = {}
     body_json_expr: str | None = None  # expressão que produz o corpo JSON
     body_text: str | None = None  # modelo de texto
+    # Envio de um ficheiro desta execução em multipart/form-data (ex.: POST /files/temp do Cyclos)
+    upload_file: str | None = None  # modelo com o nome do ficheiro
+    upload_field: str = Field(default="file", min_length=1, max_length=100)
     credential: str | None = None  # http_basic | http_bearer | http_header
     timeout_seconds: int = Field(default=30, ge=1, le=600)
     expect_status: list[int] = [200]
@@ -102,6 +105,12 @@ class HttpRequestStep(_Step):
             check_expr(self.body_json_expr)
         if self.body_text:
             check_template(self.body_text)
+        if self.upload_file:
+            check_template(self.upload_file)
+            if self.body_json_expr or self.body_text is not None:
+                raise ValueError("envie um ficheiro OU um corpo, não os dois")
+            if self.method not in ("POST", "PUT", "PATCH"):
+                raise ValueError("só é possível enviar um ficheiro com POST, PUT ou PATCH")
         if self.retries and self.method not in ("GET", "HEAD"):
             raise ValueError("retries só é permitido em GET/HEAD (pedidos com efeitos não são repetidos)")
         return self
